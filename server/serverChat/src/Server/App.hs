@@ -1,115 +1,86 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE NamedFieldPuns#-}
 
--- | Server.App module: Defines the application-level monad, environment, 
--- and the core server lifecycle logic (setup, bind, listen, and accept loop).
-
-module Server.App(
-  App(..),
-  Env(..),
-  runApp,
-  runServer,
-  defaultSocket
-) where
+-- | Server.App module: Print server messages and starts
+-- | connection handler
+-- | and the core server lifecycle logic (setup, bind, listen, and accept loop).
+module Server.App
+  ( runServer,
+    defaultSocket,
+  )
+where
 
 import Network.Socket
-import Extra.ReaderT
-import Control.Monad.Reader.Class(MonadReader, asks)
-import Control.Monad.IO.Class(MonadIO, liftIO)
-import Server.ConnectionHandler(runConn)
-import Control.Concurrent.Async
-import Control.Concurrent.STM
+import Server.ConnectionHandler (runConn)
+import Control.Concurrent (forkIO)
 
--- | The Application Monad.
--- A wrapper around ReaderT that provides access to the application environment (Env)
--- and supports IO and MonadReader operations.
-newtype App a = App
-  {unApp :: ReaderT Env IO a} 
-  deriving newtype 
-    (Functor, 
-    Applicative, 
-    Monad,
-    MonadReader Env,
-    MonadIO
-    )
+-- | Socket configuration
+data SocketConfig = SocketConfig
+  { socketFamily :: Family,
+    socketType :: SocketType,
+    socketProtoN :: ProtocolNumber,
+    socketAddress :: SockAddr
+  }
 
--- | The application environment.
--- Currently holds only socket-related configuration.
-data Env = Env{
-  socketConfig :: SocketConfig
-}
 
-data SocketConfig = SocketConfig {
-  socketFamily :: Family,
-  socketType :: SocketType,
-  socketProtoN :: ProtocolNumber,
-  socketAddress :: SockAddr
-}
-
--- | Runs the app given the environment monad given an environment and an App computation.
-runApp :: Env -> App a -> IO a
-runApp e r = runReaderT (unApp r) e
-
--- | Starts the server.
+-- | Set up server and starts listening
 -- 1. Builds the socket.
 -- 2. Binds and listens.
 -- 3. Enters the accept loop.
-runServer :: App ()
-runServer = do
-  sock <- buildSocket
-  liftIO $ putStrLn "Socket has been created"
-  SocketConfig{socketAddress} <- asks socketConfig
-  liftIO $ bind sock socketAddress
-  startListening sock
-  liftIO $ putStrLn "Listening at"
-  liftIO $ putStr (show socketAddress)
-  mainLoop sock
+runServer :: SocketConfig -> IO ()
+runServer config = do
+  -- BUILDS SOCKET ---- 
+  -- TODO improve readability
+  sock <- socket 
+    (socketFamily config) 
+    (socketType config) 
+    (socketProtoN config)
+  -- TODO Investigate implementation
+  -- NOTE Web says to allow easier debugging
+  setSocketOption sock ReuseAddr 1
+  serverLog "Socket has been created"
+  -- LISTENING ----
+  bind sock (socketAddress config)
+  listen sock maxConn
+  serverLog $ "Listening at: " ++ show socketAddress
+  serverLog $ "Max queued connections: " ++ show maxConn
+  serverLog "Waiting for connections...." 
+  --- ACCEPT LOOP ----
+  acceptLoop sock
 
 -- | The main recursive loop that accepts new client connections.
 -- For each connection, it delegates handling to runConn.
-
-mainLoop :: Socket -> App()
-mainLoop sock = do
-  conn <- liftIO $ accept sock
-  liftIO $ do 
-    putStr "Connection Found at "
-    print $ snd conn
-    putStrLn ""
+acceptLoop :: Socket -> IO()
+acceptLoop sock = do
+  conn@(_, addr) <- accept sock
+  serverLog $ "Connection Found at " ++ show addr
   -- NOTE Hopefully forks and the app will still be able to receive new connections
-  _ <- liftIO $ async $ runConn conn
-  mainLoop sock
+  _ <- forkIO $ runConn conn
+  acceptLoop sock
 
------- Helper Function ------
-defaultSocket :: SocketConfig 
-defaultSocket = SocketConfig {
-  socketFamily  = AF_INET, 
-  socketType    = Stream,
-  socketProtoN  = defaultProtocol,
-  socketAddress = SockAddrInet port host
-}
+------ Helper Functions ------
+
+-- | Default socket configuration: localhost:8080
+defaultSocket :: SocketConfig
+defaultSocket =
+  SocketConfig
+    { socketFamily = AF_INET,
+      socketType = Stream,
+      socketProtoN = defaultProtocol,
+      socketAddress = SockAddrInet port host
+    }
   where
     port = 8080
-    host = tupleToHostAddress(127,0,0,1)
+    host = tupleToHostAddress (127, 0, 0, 1)
 
+-- NOTE this could imprve by defining a transformer and limiting the actions over the external monad
+-- NOTE Similar to the model of my previous implementation
+-- | Server logging with format
+serverLog :: String -> IO ()
+serverLog msg = 
+  putStrLn string
+  where 
+    string = "[server]" ++ msg
 
--- | Creates a new socket using the configuration in the environment.
-buildSocket :: App Socket
-buildSocket = do
-  SocketConfig{
-    socketFamily,
-    socketType,
-    socketProtoN} <- asks socketConfig
-  liftIO $ socket socketFamily socketType socketProtoN
- 
-
--- | Starts listening for connections.
-startListening :: Socket -> App ()
-startListening sock = do 
-  SocketConfig{socketAddress} <- asks socketConfig
-  liftIO $ bind sock socketAddress
-  -- Maximum number of connections
-  let maxConn = 3
-  liftIO $ listen sock maxConn
-
-
+-- | Maximum Connections allowed
+maxConn :: Int
+maxConn = 10
