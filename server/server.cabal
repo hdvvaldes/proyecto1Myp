@@ -57,15 +57,23 @@ executable serverChat
     -- Other library packages from which modules are imported.
     build-depends:   
       base ^>=4.18.3.0,
-      network, -- TCP Sockets
-      stm, -- Communication between threads
-      containers, -- Data Structures
-      unliftio-core, -- Merges IO with any Monad within transformer 
-      mtl, -- Communication with env, within a Monad
-      transformers, -- Communication with the inner monad inside the transformer
-      aeson, -- Managing JSON 
-      bytestring, 
-      text, -- Easier way to manage strings
+    -- TCP Sockets
+      network, 
+       -- Communication between threads 
+       stm,
+       -- Data Structures 
+       containers,
+       -- Merges IO with any Monad within transformer  
+       unliftio-core,
+       -- Communication with env, within the transformer 
+       mtl, 
+       -- Communication with the inner monad inside the transformer 
+       transformers,
+       -- Managing JSON  
+       aeson,
+       -- String management
+       bytestring,
+       text,
     -- Directories containing source files.
     hs-source-dirs:   
       serverChat/app,
