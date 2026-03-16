@@ -1,58 +1,65 @@
 -- | Server.ConnectionHandler module: Handles per-client connection logic.
-
 module Server.ConnectionHandler (
   runConn
 ) where
 
+import Server.ServerState
+import Server.Parser.Interface
+
+import GHC.IO.Handle
 import Network.Socket (Socket, SockAddr, socketToHandle)
-import GHC.IO.Handle (Handle, hSetBuffering, BufferMode (LineBuffering), hGetLine)
+import Extra.ReaderT
 import GHC.IO.IOMode (IOMode(ReadWriteMode))
-import GHC.IO.Handle.Text (hPutStrLn)
-import Control.Concurrent.STM
-import qualified Data.Map.Strict as M
+import Control.Concurrent.STM (TVar)
+import Server.ServerTypes (Client)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 
+-- NOTE maybe passing the whole map as env is not the most practical thing
+newtype HandlerEnv =
+  HandlerEnv {serverStatus :: TVar ServerState}
 
--- | Entry point for handling a new connection.
--- Converts the Socket to a Handle for easier line-based I/O and starts the echo loop.
+type ConnHandler a = ReaderT HandlerEnv IO a
 
-data User = User {
-  name :: String, 
-  subject :: Handle,
-  -- The user is listening to preachers
-  preachers :: [Handle]
-}
-
-type UserMap = M.Map String User
 type UserConn = (Socket, SockAddr)
 
-userSetUp :: Handle -> IO User
-userSetUp user = do 
-
-    -- Asks for name
-    -- Create User
-
-generalChannel :: Handle 
-generalChannel = undefined
-
-
-
-runConn :: UserConn -> IO()
+runConn :: UserConn -> ConnHandler()
 runConn (s, _) = do 
+  -- TODO Improve multiple calls to liftIO  
   -- Convert socket to Handle with ReadWriteMode
-  hdl <- socketToHandle s ReadWriteMode
+  hdl <- liftIO $ socketToHandle s ReadWriteMode
   -- Enable line-buffering to ensure prompt delivery of messages
-  hSetBuffering hdl LineBuffering
-  user <- userSetUp hdl
+  liftIO $ hSetBuffering hdl LineBuffering
+  user <- identifyConn hdl
+  addUser user
+  connLoop user
+
+-- AUXILIAR FUNCTIONS ---
+identifyConn :: Handle -> ConnHandler Client
+identifyConn hdl =  do 
+  input <- userInput hdl
+  res <- execute parseInput input  
+
+  -- TODO umpdate TVar ServerState 
   -- add user to map
   -- with default preachers
   -- Start user listening to the general chat
   -- action <- parse entry
   -- relaizeAction action
 
--- | Reads a single line from the handle and writes it back.
-echoInput :: Handle -> IO ()
-echoInput hdl = do 
-  -- Read a line (awaits input from client)
-  msg <- hGetLine hdl
-  -- Write the same line back to the client
-  hPutStrLn hdl msg
+addUser :: Client -> ConnHandler()
+addUser client = do 
+  state <- ask serverStatus
+  readTVar state 
+
+
+connLoop :: Client -> ConnHandler()
+connLoop client = do
+  _ <- liftIO $ parseInput client
+  connLoop client
+
+-- TODO function to send text 
+
+-- TODO function to receive text 
+
+
+ 
