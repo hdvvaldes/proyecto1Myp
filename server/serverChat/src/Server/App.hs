@@ -12,6 +12,7 @@ where
 import Network.Socket
 import Server.ConnectionHandler (runConn)
 import Control.Concurrent (forkIO)
+import Control.Concurrent.STM (newTVarIO)
 
 -- | Socket configuration
 data SocketConfig = SocketConfig
@@ -20,7 +21,6 @@ data SocketConfig = SocketConfig
     socketProtoN :: ProtocolNumber,
     socketAddress :: SockAddr
   }
-
 
 -- | Set up server and starts listening
 -- 1. Builds the socket.
@@ -45,11 +45,14 @@ runServer config = do
   serverLog $ "Max queued connections: " ++ show maxConn
   serverLog "Waiting for connections...." 
   --- ACCEPT LOOP ----
-  acceptLoop sock
+  acceptLoop sock 
+
+-- TODO
+-- manage server status creation here and the env for Connecton handler to be the server status
 
 -- | The main recursive loop that accepts new client connections.
 -- For each connection, it delegates handling to runConn.
-acceptLoop :: Socket -> IO()
+acceptLoop :: Socket -> ConnectionHandler ()
 acceptLoop sock = do
   conn@(_, addr) <- accept sock
   serverLog $ "Connection Found at " ++ show addr
