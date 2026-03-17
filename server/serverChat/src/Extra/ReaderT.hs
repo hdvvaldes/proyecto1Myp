@@ -12,7 +12,6 @@ module Extra.ReaderT
   )
 where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader.Class (MonadReader, ask, local)
 import Control.Monad.Trans.Class (MonadTrans, lift)
 
@@ -55,8 +54,3 @@ instance (Monad m) => MonadReader e (ReaderT e m) where
 -- Allows lifting a computation from the underlying monad 'm' into ReaderT.
 instance MonadTrans (ReaderT a) where
   lift res = ReaderT $ const res
-
--- | MonadIO instance for ReaderT.
--- Allows performing IO actions within the ReaderT monad if the underlying monad is IO.
-instance MonadIO (ReaderT e IO) where
-  liftIO = lift

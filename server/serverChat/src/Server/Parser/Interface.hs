@@ -8,12 +8,10 @@ where
 
 import Server.ServerTypes
 
-type ServerAction = Maybe Action 
+type Input = String
 
-type Action = IO ()
-
-parseInput :: Client -> Maybe a
-parseInput c = Nothing
+parseInput :: Input -> Int
+parseInput = const 1
 
 
 

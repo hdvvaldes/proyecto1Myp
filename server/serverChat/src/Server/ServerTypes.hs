@@ -4,32 +4,27 @@ module Server.ServerTypes
     Room(..),
     RoomName,
     Username,
-    ServerAction,
   )
 where 
 import GHC.IO.Handle
 
+import Control.Concurrent.STM (TChan)
+
 type Username = String
 type RoomName = String
-
-newtype ServerAction = 
-  ServerAction {
-    action :: Int
-  }
-
 
 data Room = 
   Room {
   roomName :: RoomName,
-  participants :: [Username],
+  participants :: [Client],
   owner :: Maybe Username
   }
-
 
 -- TODO manage clientStatus with a enum/data
 data Client =
   Client {
   clientName :: Username,
   clientHandle :: Handle,
-  clientStatus :: String
+  clientStatus :: String,
+  clientChan :: TChan String
 }

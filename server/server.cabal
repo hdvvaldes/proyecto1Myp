@@ -52,6 +52,7 @@ executable serverChat
       Server.App,
       Server.ServerTypes,
       Server.Parser.Interface,
+      Server.Parser.ParserTypes,
       Extra.ReaderT
 
     -- LANGUAGE extensions used by modules in this package.

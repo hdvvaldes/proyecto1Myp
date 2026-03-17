@@ -13,6 +13,7 @@ import Network.Socket
 import Server.ConnectionHandler (runConn)
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (newTVarIO)
+import Server.ServerState (newServerState)
 
 -- | Socket configuration
 data SocketConfig = SocketConfig
@@ -44,8 +45,12 @@ runServer config = do
   serverLog $ "Listening at: " ++ show socketAddress
   serverLog $ "Max queued connections: " ++ show maxConn
   serverLog "Waiting for connections...." 
+  
+  state <- newServerState 
+  
   --- ACCEPT LOOP ----
   acceptLoop sock 
+  
 
 -- TODO
 -- manage server status creation here and the env for Connecton handler to be the server status
