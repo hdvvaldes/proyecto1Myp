@@ -2,7 +2,7 @@
 
 module Server.ServerState 
   (
-    ServerState,
+    ServerState(..),
     newServerState,
     addUser
   ) 
@@ -10,7 +10,7 @@ where
 
 import qualified Data.Map as Map
 import Server.ServerTypes as T
-import Control.Concurrent.STM (TVar, newTVar, STM)
+import Control.Concurrent.STM (TVar, newTVar, STM, modifyTVar')
 
 data ServerState = 
   ServerState {
@@ -37,8 +37,8 @@ data StateRooms =
     userRooms :: Map.Map RoomName Room
 }
 
-addUser :: StateClients -> Client -> Maybe Bool
-addUser state Client{clientName}
-  | Map.member clientName state = Nothing
-  | otherwise = Just True
-
+addUser :: TVar ServerState -> Client -> STM ()
+addUser stateVar client@Client{clientName} = 
+  modifyTVar' stateVar $ \st -> st { 
+    stateClients = Map.insert clientName client (stateClients st) 
+  }

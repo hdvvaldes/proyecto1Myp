@@ -10,10 +10,12 @@ module Server.App
 where
 
 import Network.Socket
-import Server.ConnectionHandler (runConn)
-import Control.Concurrent (forkIO)
-import Control.Concurrent.STM (newTVarIO)
+
+import Server.ConnectionHandler (runConn, HandlerEnv(..))
 import Server.ServerState (newServerState)
+
+import Control.Concurrent (forkIO)
+import Control.Concurrent.STM (newTVarIO, atomically)
 
 -- | Socket configuration
 data SocketConfig = SocketConfig
@@ -40,30 +42,30 @@ runServer config = do
   setSocketOption sock ReuseAddr 1
   serverLog "Socket has been created"
   -- LISTENING ----
-  bind sock (socketAddress config)
+  let address = socketAddress config
+
+  bind sock address
   listen sock maxConn
-  serverLog $ "Listening at: " ++ show socketAddress
+  serverLog $ "Listening at: " ++ show address
   serverLog $ "Max queued connections: " ++ show maxConn
   serverLog "Waiting for connections...." 
   
-  state <- newServerState 
+  -- Creating Server State
+  stateVar <- atomically newServerState 
   
+  let handleEnv = HandlerEnv { handlerClient = Nothing, serverState = stateVar }
+
   --- ACCEPT LOOP ----
-  acceptLoop sock 
+  acceptLoop handleEnv sock 
   
-
--- TODO
--- manage server status creation here and the env for Connecton handler to be the server status
-
 -- | The main recursive loop that accepts new client connections.
 -- For each connection, it delegates handling to runConn.
-acceptLoop :: Socket -> ConnectionHandler ()
-acceptLoop sock = do
+acceptLoop :: HandlerEnv -> Socket -> IO ()
+acceptLoop env sock = do
   conn@(_, addr) <- accept sock
   serverLog $ "Connection Found at " ++ show addr
-  -- NOTE Hopefully forks and the app will still be able to receive new connections
-  _ <- forkIO $ runConn conn
-  acceptLoop sock
+  _ <- forkIO $ runConn env conn
+  acceptLoop env sock
 
 ------ Helper Functions ------
 

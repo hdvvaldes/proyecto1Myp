@@ -2,16 +2,21 @@
 
 module Server.Parser.Interface
   (
-    parseInput
+    parseRequest
   )
 where 
 
-import Server.ServerTypes
+import Server.Parser.ParserTypes (Request (SendPublicText))
+import Data.Aeson (decode)
+import Data.ByteString.Lazy (fromStrict)
+import Data.ByteString.Char8 (ByteString)
 
-type Input = String
+-- NOTE this is for production
+--parseRequest :: ByteString -> Maybe Request
+--parseRequest = decode . fromStrict
 
-parseInput :: Input -> Int
-parseInput = const 1
+parseRequest :: ByteString -> Maybe Request
+parseRequest = Just SendPublicText
 
 
 

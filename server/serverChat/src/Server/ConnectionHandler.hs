@@ -1,90 +1,113 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Server.ConnectionHandler module: Handles per-client connection logic.
 module Server.ConnectionHandler (
+  ConnHandler(..),
+  HandlerEnv(..),
   runConn
 ) where
 
 import Server.ServerState
-import Server.Parser.Interface
-import Server.ServerTypes (Client(..))
+import Server.Parser.Interface (parseRequest)
+import Server.Parser.ParserTypes (Request(..))
+import Server.ServerTypes (Client(..), Username)
 
-import Extra.ReaderT
+import Control.Monad.Reader (ReaderT, runReaderT, ask, asks)
 
-import GHC.IO.Handle
+import GHC.IO.Handle (Handle, hSetBuffering, BufferMode(LineBuffering), hGetLine)
 import Network.Socket (Socket, SockAddr, socketToHandle)
 import GHC.IO.IOMode (IOMode(ReadWriteMode))
-import Control.Concurrent.STM (TVar, modifyTVar', STM, newTChan, atomically)
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Concurrent.STM (TVar, modifyTVar', STM, newTChan, atomically, modifyTVar, readTChan, readTVar)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.ByteString.Char8 (hPutStrLn, pack)
+import Control.Concurrent (forkIO)
+import Control.Monad.IO.Unlift (MonadUnliftIO (withRunInIO))
+import Control.Monad.RWS (MonadReader)
 
 -- NOTE maybe passing the whole map as env is not the most practical thing
-data HandlerEnv = 
+data HandlerEnv =
   HandlerEnv{
-    serverState :: TVar ServerState,
-    handlerClient :: Client
+    handlerClient :: Maybe Client,
+    serverState :: TVar ServerState
   }
 
-type ConnHandler a = ReaderT HandlerEnv IO a
+newtype ConnHandler a = ConnHandler {
+  runConnHandler :: ReaderT HandlerEnv IO a
+} deriving (
+  Functor, Applicative, Monad, 
+  MonadReader HandlerEnv, MonadIO, MonadUnliftIO)
 
 type UserConn = (Socket, SockAddr)
-runConn :: UserConn -> ConnHandler()
-runConn (s, _) = do
-  -- TODO Improve multiple calls to liftIO  
-  -- Convert socket to Handle with ReadWriteMode
-  hdl <- liftIO $ socketToHandle s ReadWriteMode
-  -- Enable line-buffering to ensure prompt delivery of messages
-  liftIO $ hSetBuffering hdl LineBuffering
-  user <- identifyConn hdl
-  forkIO liftIO $ transmitter clientChan user
-  connLoop user
+runConn :: HandlerEnv -> UserConn -> IO ()
+runConn env (s, _) = do
+  hdl <- socketToHandle s ReadWriteMode
+  hSetBuffering hdl LineBuffering
+  -- Standardize username handling or initial handshake here
+  let initialName = "Guest" -- TODO: Get from handshake
+  runReaderT (runConnHandler (handleConnection hdl initialName)) env
+
+handleConnection :: Handle -> Username -> ConnHandler ()
+handleConnection hdl uname = do
+  client <- createClient hdl uname
+  addClient client
+  -- Fork delivery loop
+  _ <- withRunInIO $ \run -> forkIO $ run (deliveryLoop client)
+  connLoop client
 
 -- AUXILIAR FUNCTIONS ---
 -- | Creates formal Client to communicate
-identifyConn :: Handle -> ConnHandler Client
-identifyConn hdl = do 
-    chan <- liftIO $ atomically newTChan
+createClient :: Handle -> Username -> ConnHandler Client
+createClient hdl uname = do 
+    chan <- runSTM newTChan
     return $ 
-  -- TODO Validation :
-  -- Need to idntify itself in order to get into sign up onto the server
       Client {
-      clientName = "testingName" ,
+      clientName = uname,
       clientHandle = hdl,
-      clientStatus = "testingStatus",
+      clientStatus = "Active",
       clientChan = chan
   }
---  input <- userInput hdl
- --  res <- parseInput input "CREATE_USER"
 
-  -- TODO umpdate TVar ServerState 
-  -- add user to map
-  -- with default preachers
-  -- Start user listening to the general chat
-  -- action <- parse entry
-  -- relaizeAction action
-
-addUser :: Client -> ConnHandler()
-addUser client = undefined
-  -- TODO Add to map
-  -- TODO Add client to main room
-  -- TODO Write to main 
-  -- TODO Receive from currentRoom
+deliveryLoop :: Client -> ConnHandler ()
+deliveryLoop 
+  client@Client{clientHandle, clientChan} = do
+  msg <- runSTM $ readTChan clientChan
+  liftIO $ hPutStrLn clientHandle msg
+  deliveryLoop client
 
 connLoop :: Client -> ConnHandler()
 connLoop client = do
   -- TODO handle exception
   entry <- liftIO $ hGetLine (clientHandle client)
-  runAction $ parseInput entry
+  case parseRequest (pack entry) of
+    Nothing -> liftIO $ putStrLn "Invalid request"
+    Just req -> handleRequest req
   connLoop client
 
-runAction :: Int -> ConnHandler (Maybe a)
-runAction n  
-  | n == -1 = undefined
-  | otherwise = undefined
+handleRequest :: Request -> ConnHandler ()
+handleRequest req = case req of
+  Identify uname -> do
+    -- Existing logic for identification
+    -- NOTE Remove this print 
+    liftIO $ putStrLn $ "Identifying user: " ++ show uname
+  SendPublicText msg -> do 
+    case asks handlerClient of 
+      Nothing -> 
+        liftIO $ putStrLn $ "Client not Identified"
+      Just a -> 
+        -- echo this msg to all the other clients
+  _ -> liftIO $ putStrLn "Other requests not yet implemented"
 
-runSMT :: STM a -> ConnHandler a
-runSMT action = liftIO $ atomically action
 
+-- MODIFYING SERVER STATE ---
 
+runSTM :: STM a -> ConnHandler a
+runSTM action = liftIO $ atomically action
+
+addClient :: Client -> ConnHandler ()
+addClient client = do
+  stateVar <- asks serverState
+  runSTM $ addUser stateVar client
 -- TODO function to send text
 
 -- TODO function to receive text

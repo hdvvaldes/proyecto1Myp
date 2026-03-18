@@ -9,6 +9,7 @@ where
 import GHC.IO.Handle
 
 import Control.Concurrent.STM (TChan)
+import Data.ByteString (ByteString)
 
 type Username = String
 type RoomName = String
@@ -21,10 +22,11 @@ data Room =
   }
 
 -- TODO manage clientStatus with a enum/data
+type Messages = ByteString
 data Client =
   Client {
   clientName :: Username,
   clientHandle :: Handle,
   clientStatus :: String,
-  clientChan :: TChan String
+  clientChan :: TChan Messages
 }

@@ -84,22 +84,37 @@ Creates an `Env` with the default socket configuration, then runs the server ins
 - `mainLoop` — accepts a connection, delegates to `runConn`, and recurses.
 
 ---
+### `src/Server/ServerTypes.hs`
+
+| Role | Shared server data types |
+|------|--------------------------|
+| **Module** | `Server.ServerTypes` |
+| **Key Types** | `Client`, `Room`, `Messages` (ByteString) |
+
+**Key structures:**
+- `Client` — stores user metadata, their connection `Handle`, and `clientChan` (`TChan Messages`).
+- `Messages` — alias for `ByteString`, ensuring efficient binary-safe communication.
+- `Room` — manages participants and ownership.
+
+---
 
 ### `src/Server/ConnectionHandler.hs`
 
-| Role | Handles a single client connection |
+| Role | Handles a single client connection with dual-thread I/O |
 |------|------------------------------------|
 | **Module** | `Server.ConnectionHandler` |
-| **Exports** | `runConn` |
-| **Imports** | `Network.Socket` (external) — `Socket`, `SockAddr`, `socketToHandle` |
-|             | `GHC.IO.Handle` / `GHC.IO.IOMode` / `GHC.IO.Handle.Text` (external) — handle-based I/O |
+| **Exports** | `ConnHandler(..)`, `runConn` |
+| **Key Monads** | `ConnHandler` — `newtype` over `ReaderT HandlerEnv IO` (implements `MonadUnliftIO`) |
+
+**Concurrency Model (Reader/Writer):**
+- **Reader Thread (`connLoop`)**: The main connection thread. It reads user input from the `Handle` via `hGetLine`, parses it, and executes actions.
+- **Writer Thread (`deliveryLoop`)**: Forked upon client connection. It waits for messages in the `clientChan` (`TChan`) and writes them to the `Handle` using `hPutStrLn`.
 
 **Key functions:**
-- `runConn` — converts a socket to a handle and calls `echoInput`.
-- `echoInput` — reads a line from the handle and echoes it back.
-
-> [!NOTE]
-> This module currently implements a simple echo server. It is the future integration point for the chat protocol defined in `protocole.md`.
+- `runConn` — initializes the connection, creates the client, and starts the loops.
+- `createClient` — initializes a new `TChan` and builds the `Client` record.
+- `addClient` — registers the client and forks the `deliveryLoop`.
+- `runSTM` — helper to run `STM` actions within the `ConnHandler`.
 
 ---
 
@@ -113,23 +128,34 @@ Creates an `Env` with the default socket configuration, then runs the server ins
 |             | `Control.Monad.Trans.Class` (external) — `MonadTrans` typeclass |
 |             | `Control.Monad.IO.Class` (external) — `MonadIO` typeclass |
 
-Provides a from-scratch `ReaderT` implementation with instances for `Functor`, `Applicative`, `Monad`, `MonadReader`, `MonadTrans`, and `MonadIO`. Used by `Server.App` as the foundation for the `App` monad.
+Provides a from-scratch `ReaderT` implementation with instances for `Functor`, `Applicative`, `Monad`, `MonadReader`, `MonadTrans`, and `MonadIO`.
+> [!NOTE]
+> `ConnectionHandler.hs` utilizes a `ConnHandler` monad built upon the custom `Extra.ReaderT`. To support the dual-thread model, `Extra.ReaderT` has been extended with a `MonadUnliftIO` instance.
 
 ## High-Level Data Flow
 
 ```mermaid
 sequenceDiagram
-    participant Main
     participant App as Server.App
     participant Conn as ConnectionHandler
-    participant Net as Network.Socket
+    participant STM as TChan / TVar
+    participant Net as Network.Socket / Handle
 
-    Main->>App: runApp env runServer
-    App->>Net: socket / bind / listen
-    loop Accept connections
-        App->>Net: accept
-        Net-->>App: (Socket, SockAddr)
-        App->>Conn: runConn (socket, addr)
-        Conn->>Conn: socketToHandle → echoInput
+    App->>Conn: runConn (socket, addr)
+    Conn->>Net: socketToHandle
+    Conn->>Conn: createClient (newTChan)
+    Conn->>Conn: addClient
+    par Writer Thread
+        Conn->>Conn: deliveryLoop
+        loop Wait for Messages
+            STM-->>Conn: readTChan
+            Conn->>Net: hPutStrLn (ByteString)
+        end
+    and Reader Thread
+        Conn->>Conn: connLoop
+        loop Handle Input
+            Net-->>Conn: hGetLine
+            Conn->>Conn: parse & runAction
+        end
     end
 ```
