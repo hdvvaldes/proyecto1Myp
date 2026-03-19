@@ -78,3 +78,12 @@ clean:
 	@echo "Cleaning artefacts"
 	rm -rf $(BUILD_DIR) $(TARGET) $(TEST_TARGET)
 
+# The define clangd needs to match the selected lexer back-end
+LEXER_DEFINE := -DUSE_FLEX_LEXER
+
+# Flags that every translation unit sees (mirrors CXXFLAGS, minus -O/-g)
+CLANGD_FLAGS := $(CXXFLAGS) $(LEXER_DEFINE) $(LEXER_DEFINE)
+
+compile_flags.txt:
+	@echo "$(CLANGD_FLAGS)" > compile_flags.txt
+	@echo "Generated compile_flags.txt with flags: $(CLANGD_FLAGS)"
