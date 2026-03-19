@@ -26,7 +26,6 @@ FL_LIB          := $(shell $(CXX) -lfl -x c++ /dev/null -o /dev/null 2>/dev/null
 LDFLAGS         += $(FL_LIB)
 
 # -- Source files ----
-# NOTE Before using this def i need to generate flex
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 
 # -- Object files
@@ -62,7 +61,7 @@ $(GENERATED_LEXER): $(LEX_SRC)
 	flex++ -o $@ $<
 	@echo "[flex++] Done."
 
-# -- Create build directory -- 
+# -- Create build directory --
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
@@ -77,8 +76,8 @@ clean:
 	@echo "Cleaning artefacts"
 	rm -rf $(BUILD_DIR) $(TARGET) $(TEST_TARGET)
 
-# Flags that every translation unit sees (mirrors CXXFLAGS, minus -O/-g)
-CLANGD_FLAGS := $(CXXFLAGS) 
+# Flags that every translation unit sees (mirrors CXXFLAGS)
+CLANGD_FLAGS := $(CXXFLAGS)
 
 compile_flags:
 	@echo "$(CLANGD_FLAGS)" > compile_flags.txt
