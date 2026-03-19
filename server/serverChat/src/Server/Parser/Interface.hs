@@ -6,17 +6,16 @@ module Server.Parser.Interface
   )
 where 
 
-import Server.Parser.ParserTypes (Request (SendPublicText))
-import Data.Aeson (decode)
-import Data.ByteString.Lazy (fromStrict)
+import qualified Server.Parser.ParserTypes as PT
+
+import Data.Text.Encoding(decodeUtf8)
+
 import Data.ByteString.Char8 (ByteString)
 
 -- NOTE this is for production
 --parseRequest :: ByteString -> Maybe Request
---parseRequest = decode . fromStrict
-
-parseRequest :: ByteString -> Maybe Request
-parseRequest = Just SendPublicText
+-- parseRequest = decode . fromStrict
 
 
-
+parseRequest :: ByteString -> Maybe PT.Request
+parseRequest req = Just $ PT.SendPublicText (decodeUtf8 req)

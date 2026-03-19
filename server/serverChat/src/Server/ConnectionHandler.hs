@@ -10,7 +10,7 @@ module Server.ConnectionHandler (
 
 import Server.ServerState
 import Server.Parser.Interface (parseRequest)
-import Server.Parser.ParserTypes (Request(..))
+import Server.Parser.ParserTypes as PT
 import Server.ServerTypes (Client(..), Username)
 
 import Control.Monad.Reader (ReaderT, runReaderT, ask, asks)
@@ -64,7 +64,7 @@ createClient hdl uname = do
       Client {
       clientName = uname,
       clientHandle = hdl,
-      clientStatus = "Active",
+      clientStatus = P.ACTIVE,
       clientChan = chan
   }
 
@@ -95,9 +95,16 @@ handleRequest req = case req of
       Nothing -> 
         liftIO $ putStrLn $ "Client not Identified"
       Just a -> 
+        liftIO $ putStrLn
         -- echo this msg to all the other clients
   _ -> liftIO $ putStrLn "Other requests not yet implemented"
 
+clientActionLog :: String -> ConnHandler()
+clientActionLog msg = do
+  putStrLn 
+
+  case asks handlerClient of 
+    Nothing -> 
 
 -- MODIFYING SERVER STATE ---
 

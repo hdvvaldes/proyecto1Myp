@@ -8,7 +8,7 @@ module Server.Parser.ParserTypes
 where 
 
 import GHC.Generics (Generic)
-import Data.Aeson (FromJSON(..), (.:), (.:?), withObject, Value(..))
+import Data.Aeson (FromJSON(..), (.:), withObject)
 import Data.Text (Text)
 
 data Status = ACTIVE | AWAY | BUSY
