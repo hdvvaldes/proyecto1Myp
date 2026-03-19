@@ -36,7 +36,7 @@ OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 # Targets
 # =========================
 
-.PHONY: all flex clean distclean run help
+.PHONY: all flex clean distclean run help lexer
 
 # Default goal
 all: $(TARGET)
@@ -79,8 +79,10 @@ LEXER_DEFINE := -DUSE_FLEX_LEXER
 # Flags that every translation unit sees (mirrors CXXFLAGS, minus -O/-g)
 CLANGD_FLAGS := $(CXXFLAGS) $(LEXER_DEFINE)
 
-lexer: $(GENERATED_LEXER)
-	
+lexer:
+	flex++ lexer/chat_lexer.ll
+	g++ lex.yy.cc -o lexerScan
+
 
 compile_flags:
 	@echo "$(CLANGD_FLAGS)" > compile_flags.txt

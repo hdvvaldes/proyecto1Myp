@@ -1,5 +1,6 @@
 %{
-
+  #include<iostream>
+  using namespace std;
 %}
 
 %option c++
@@ -18,10 +19,10 @@ WORD    [^ \t\n]+
 
 <INITIAL>{WS}           { /* skip leading whitespace */ }
 
-<INITIAL>"/help"        { }
-<INITIAL>"/quit"        { }
-<INITIAL>"/disconnect"  { }
-<INITIAL>"/users"       { }
+<INITIAL>"/help"        { std::cout << "found: " << yytext << std::endl; }
+<INITIAL>"/quit"        { std::cout << "found: " << yytext << std::endl;  }
+<INITIAL>"/disconnect"  { std::cout << "found: " << yytext << std::endl;  }
+<INITIAL>"/users"       { std::cout << "found: " << yytext << std::endl;  }
 
 <INITIAL>"/connect"     { BEGIN(SC_ARGS); }
 <INITIAL>"/identify"    { BEGIN(SC_ARGS); }
@@ -57,4 +58,5 @@ WORD    [^ \t\n]+
 int main() {
   FlexLexer* lexer = new yyFlexLexer;
   lexer->yylex();
+  return 0;
 }
