@@ -16,3 +16,5 @@ void View::showWelcome() {
               << Color::BRIGHT_WHITE << "/help" << Color::RESET
               << Color::DIM << " for a list of commands.\n\n" << Color::RESET;
 }
+
+
