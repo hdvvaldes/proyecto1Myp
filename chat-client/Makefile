@@ -41,8 +41,6 @@ OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 # Default goal
 all: $(TARGET)
 
-debuggy: $(DEBUG)
-
 # --- Link ----
 $(TARGET): $(OBJS)
 	@echo "LINKING FOR $@"
@@ -64,9 +62,6 @@ $(GENERATED_LEXER): $(LEX_SRC)
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-$(DEBUG): 
-	@echo "[LD]  $@"
-
 -include $(DEPS)
 
 # -- run --
@@ -82,8 +77,11 @@ clean:
 LEXER_DEFINE := -DUSE_FLEX_LEXER
 
 # Flags that every translation unit sees (mirrors CXXFLAGS, minus -O/-g)
-CLANGD_FLAGS := $(CXXFLAGS) $(LEXER_DEFINE) $(LEXER_DEFINE)
+CLANGD_FLAGS := $(CXXFLAGS) $(LEXER_DEFINE)
 
-compile_flags.txt:
+lexer: $(GENERATED_LEXER)
+	
+
+compile_flags:
 	@echo "$(CLANGD_FLAGS)" > compile_flags.txt
 	@echo "Generated compile_flags.txt with flags: $(CLANGD_FLAGS)"

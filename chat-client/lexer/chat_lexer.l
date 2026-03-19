@@ -5,10 +5,7 @@
 %option prefix="Chat"
 
 %{
-#include "Lexer.h"
-#include <string>
-#include <sstream>
-struct LexerImpl;
+
 %}
 
 %x SC_ARGS
