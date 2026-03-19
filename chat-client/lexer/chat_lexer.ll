@@ -1,12 +1,10 @@
-
-%option c++
-%option noyywrap
-%option nodefault
-%option prefix="Chat"
-
 %{
 
 %}
+
+%option c++
+%option noyywrap
+
 
 %x SC_ARGS
 %x SC_TEXT
@@ -53,3 +51,10 @@ WORD    [^ \t\n]+
 <SC_TEXT><<EOF>>        { BEGIN(INITIAL); }
 
 %%
+
+ /* TODO remove this main function*/
+
+int main() {
+  FlexLexer* lexer = new yyFlexLexer;
+  lexer->yylex();
+}

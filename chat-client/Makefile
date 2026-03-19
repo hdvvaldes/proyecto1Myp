@@ -18,7 +18,7 @@ LDFLAGS  := -pthread
 # -- Lexer Definitions ---
 
 GENERATED_LEXER := $(SRC_DIR)/Lexer.cpp
-LEX_SRC         := $(LEX_DIR)/chat_lexer.l
+LEX_SRC         := $(LEX_DIR)/chat_lexer.ll
 LEXER_SRC       := $(GENERATED_LEXER)
 CXXFLAGS        += -DUSE_FLEX_LEXER
 # flex++ requires -lfl on some systems; try to link it if available
