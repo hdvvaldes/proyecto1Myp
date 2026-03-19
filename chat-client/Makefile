@@ -27,16 +27,18 @@ LDFLAGS         += $(FL_LIB)
 
 # -- Source files ----
 # NOTE Before using this def i need to generate flex
-ALL_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 
 # -- Object files
 OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
+
+DEPS := $(OBJS:.o=.d)
 
 # =========================
 # Targets
 # =========================
 
-.PHONY: all flex clean distclean run help lexer
+.PHONY: all flex clean distclean run help
 
 # Default goal
 all: $(TARGET)
@@ -44,6 +46,8 @@ all: $(TARGET)
 # --- Link ----
 $(TARGET): $(OBJS)
 	@echo "LINKING FOR $@"
+	@echo "Object $^"
+
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 	@echo "Build complete: $(TARGET)"
 
@@ -73,16 +77,8 @@ clean:
 	@echo "Cleaning artefacts"
 	rm -rf $(BUILD_DIR) $(TARGET) $(TEST_TARGET)
 
-# The define clangd needs to match the selected lexer back-end
-LEXER_DEFINE := -DUSE_FLEX_LEXER
-
 # Flags that every translation unit sees (mirrors CXXFLAGS, minus -O/-g)
-CLANGD_FLAGS := $(CXXFLAGS) $(LEXER_DEFINE)
-
-lexer:
-	flex++ lexer/chat_lexer.ll
-	g++ lex.yy.cc -o lexerScan
-
+CLANGD_FLAGS := $(CXXFLAGS) 
 
 compile_flags:
 	@echo "$(CLANGD_FLAGS)" > compile_flags.txt
