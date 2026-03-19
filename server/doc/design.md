@@ -11,90 +11,59 @@ server/
 │   ├── app/
 │   │   └── Main.hs         ← Entry point
 │   └── src/
-│       ├── Server/
-│       │   ├── App.hs      ← Core application logic & types
-│       │   └── ConnectionHandler.hs  ← Per-connection I/O
-│       └── Extra/
-│           └── ReaderT.hs  ← Custom ReaderT monad transformer
+│       └── Server/
+│           ├── App.hs      ← Core application logic & server lifecycle
+│           ├── ConnectionHandler.hs  ← Per-connection I/O and request handling
+│           ├── ServerState.hs ← Global server state and STM actions
+│           ├── ServerTypes.hs ← Shared data types (Client, Room, etc.)
+│           └── Parser/
+│               ├── Interface.hs   ← Request parsing entry point
+│               └── ParserTypes.hs ← Request and Response types
 ```
 
 ## File Dependency Graph
 
 ```mermaid
 graph TD
-    CABAL["serverdd.cabal"]
+    CABAL["server.cabal"]
     MAIN["app/Main.hs"]
     APP["src/Server/App.hs"]
     CONN["src/Server/ConnectionHandler.hs"]
-    READER["src/Extra/ReaderT.hs"]
+    STATE["src/Server/ServerState.hs"]
+    TYPES["src/Server/ServerTypes.hs"]
+    PARSER["src/Server/Parser/Interface.hs"]
 
-    CABAL -->|"declares modules & source dirs"| MAIN
     CABAL -->|"declares modules"| APP
     CABAL -->|"declares modules"| CONN
-    CABAL -->|"declares modules"| READER
-
+    CABAL -->|"declares modules"| STATE
+    
     MAIN -->|"import Server.App"| APP
-    APP  -->|"import Extra.ReaderT"| READER
     APP  -->|"import Server.ConnectionHandler"| CONN
+    APP  -->|"import Server.ServerState"| STATE
+    CONN -->|"import Server.ServerState"| STATE
+    CONN -->|"import Server.Parser.Interface"| PARSER
+    STATE -->|"import Server.ServerTypes"| TYPES
+    CONN -->|"import Server.ServerTypes"| TYPES
 ```
 
 ## File-by-File Breakdown
 
-### `serverdd.cabal`
+### `server.cabal`
 
 | Role | Build manifest |
 |------|---------------|
-| **Declares** | `Main.hs` (entry), `Server.App`, `Server.ConnectionHandler`, `Extra.ReaderT` |
-| **Source dirs** | `serverdd/app` (for `Main.hs`), `serverdd/src` (for library modules) |
-| **Dependencies** | `base`, `network`, `mtl`, `transformers` |
-
----
-
-### `app/Main.hs`
-
-| Role | Application entry point |
-|------|------------------------|
-| **Module** | `Main` |
-| **Imports** | `Server.App` — uses `Env`, `defaultSocket`, `runApp`, `runServer` |
-
-Creates an `Env` with the default socket configuration, then runs the server inside the `App` monad via `runApp`.
+| **Declares** | `Main.hs` (entry), `Server.App`, `Server.ConnectionHandler`, `Server.ServerState`, `Server.ServerTypes` |
+| **Dependencies** | `base`, `network`, `stm`, `transformers`, `text`, `bytestring`, `containers` |
 
 ---
 
 ### `src/Server/App.hs`
 
-| Role | Core application types and server lifecycle |
+| Role | Server lifecycle and accept loop |
 |------|---------------------------------------------|
 | **Module** | `Server.App` |
-| **Exports** | `App(..)`, `Env(..)`, `runApp`, `runServer`, `defaultSocket` |
-| **Imports** | `Extra.ReaderT` — uses the custom `ReaderT` as the underlying monad transformer |
-|             | `Server.ConnectionHandler` — calls `runConn` to process accepted connections |
-|             | `Network.Socket` (external) — socket primitives |
-|             | `Control.Monad.Reader.Class` (external) — `MonadReader`, `asks` |
-|             | `Control.Monad.IO.Class` (external) — `MonadIO`, `liftIO` |
-
-**Key types:**
-- `App a` — a newtype over `ReaderT Env IO a`, deriving `Functor`, `Applicative`, `Monad`, `MonadReader Env`, `MonadIO`.
-- `Env` — holds a `SocketConfig` record.
-- `SocketConfig` — family, type, protocol, and address for the socket.
-
-**Key functions:**
-- `runApp` — unwraps `App` and runs the `ReaderT` with a given `Env`.
-- `runServer` — builds a socket → starts listening → enters `mainLoop`.
-- `mainLoop` — accepts a connection, delegates to `runConn`, and recurses.
-
----
-### `src/Server/ServerTypes.hs`
-
-| Role | Shared server data types |
-|------|--------------------------|
-| **Module** | `Server.ServerTypes` |
-| **Key Types** | `Client`, `Room`, `Messages` (ByteString) |
-
-**Key structures:**
-- `Client` — stores user metadata, their connection `Handle`, and `clientChan` (`TChan Messages`).
-- `Messages` — alias for `ByteString`, ensuring efficient binary-safe communication.
-- `Room` — manages participants and ownership.
+| **Exports** | `runServer`, `defaultSocket` |
+| **Key functions:** | `runServer` (setup socket, bind, listen), `acceptLoop` (forks `runConn`) |
 
 ---
 
@@ -103,34 +72,28 @@ Creates an `Env` with the default socket configuration, then runs the server ins
 | Role | Handles a single client connection with dual-thread I/O |
 |------|------------------------------------|
 | **Module** | `Server.ConnectionHandler` |
-| **Exports** | `ConnHandler(..)`, `runConn` |
-| **Key Monads** | `ConnHandler` — `newtype` over `ReaderT HandlerEnv IO` (implements `MonadUnliftIO`) |
-
-**Concurrency Model (Reader/Writer):**
-- **Reader Thread (`connLoop`)**: The main connection thread. It reads user input from the `Handle` via `hGetLine`, parses it, and executes actions.
-- **Writer Thread (`deliveryLoop`)**: Forked upon client connection. It waits for messages in the `clientChan` (`TChan`) and writes them to the `Handle` using `hPutStrLn`.
-
-**Key functions:**
-- `runConn` — initializes the connection, creates the client, and starts the loops.
-- `createClient` — initializes a new `TChan` and builds the `Client` record.
-- `addClient` — registers the client and forks the `deliveryLoop`.
-- `runSTM` — helper to run `STM` actions within the `ConnHandler`.
+| **Concurrency Model:** | **Reader Thread (`connLoop`)**: Reads input, parses requests, and executes actions. |
+|                       | **Writer Thread (`deliveryLoop`)**: Waits for messages in `TChan` and writes to `Handle`. |
+| **Key functions:** | `runConn` (init), `handshake` (ID creation), `handleRequest` (dispatch), `broadcast` |
 
 ---
 
-### `src/Extra/ReaderT.hs`
+### `src/Server/ServerState.hs`
 
-| Role | Custom `ReaderT` monad transformer |
-|------|-------------------------------------|
-| **Module** | `Extra.ReaderT` |
-| **Exports** | `ReaderT`, `runReaderT`, `ask`, `lift` |
-| **Imports** | `Control.Monad.Reader.Class` (external) — `MonadReader` typeclass |
-|             | `Control.Monad.Trans.Class` (external) — `MonadTrans` typeclass |
-|             | `Control.Monad.IO.Class` (external) — `MonadIO` typeclass |
+| Role | Global state management using STM |
+|------|----------------------------------|
+| **Module** | `Server.ServerState` |
+| **Key functions:** | `newServerState`, `addUser`, `broadcast` (to all), `getClientCount` |
 
-Provides a from-scratch `ReaderT` implementation with instances for `Functor`, `Applicative`, `Monad`, `MonadReader`, `MonadTrans`, and `MonadIO`.
-> [!NOTE]
-> `ConnectionHandler.hs` utilizes a `ConnHandler` monad built upon the custom `Extra.ReaderT`. To support the dual-thread model, `Extra.ReaderT` has been extended with a `MonadUnliftIO` instance.
+---
+
+### `src/Server/ServerTypes.hs`
+
+| Role | Shared server data types |
+|------|--------------------------|
+| **Key Types** | `Client` (name, handle, chan), `Room`, `Status` |
+
+---
 
 ## High-Level Data Flow
 
@@ -138,24 +101,26 @@ Provides a from-scratch `ReaderT` implementation with instances for `Functor`, `
 sequenceDiagram
     participant App as Server.App
     participant Conn as ConnectionHandler
-    participant STM as TChan / TVar
+    participant State as Server.ServerState
     participant Net as Network.Socket / Handle
 
     App->>Conn: runConn (socket, addr)
     Conn->>Net: socketToHandle
-    Conn->>Conn: createClient (newTChan)
-    Conn->>Conn: addClient
+    Conn->>State: getClientCount
+    Conn->>Conn: handshake (Guest-N)
+    Conn->>State: addUser
     par Writer Thread
-        Conn->>Conn: deliveryLoop
         loop Wait for Messages
-            STM-->>Conn: readTChan
-            Conn->>Net: hPutStrLn (ByteString)
+            State-->>Conn: readTChan
+            Conn->>Net: hPutStrLn
         end
     and Reader Thread
-        Conn->>Conn: connLoop
         loop Handle Input
             Net-->>Conn: hGetLine
-            Conn->>Conn: parse & runAction
+            Conn->>Conn: handleRequest
+            opt Public Text
+                Conn->>State: broadcast
+            end
         end
     end
 ```

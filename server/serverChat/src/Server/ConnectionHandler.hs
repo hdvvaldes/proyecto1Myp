@@ -13,7 +13,7 @@ module Server.ConnectionHandler (
 import qualified Server.ServerState as SST
 import Server.Parser.Interface (parseRequest)
 import qualified Server.Parser.ParserTypes as PT
-import Server.ServerTypes (Client(..), Username, Status(..))
+import Server.ServerTypes (Client(..), Status(..))
 
 import Control.Monad.Reader (ReaderT, runReaderT, asks, local)
 
@@ -45,7 +45,8 @@ newtype ConnHandler a = ConnHandler {
 
 type UserConn = (Socket, SockAddr)
 
--- | Runs the ConnHandler with the given environment
+-- | Main entry point for a new client connection.
+-- Converts the socket to a handle and runs the connection handler.
 runConn :: HandlerEnv -> UserConn -> IO ()
 runConn env (s, _) = do
   -- NOTE maybe this is supposed o be in another part and run it directily with the readerT
@@ -54,6 +55,7 @@ runConn env (s, _) = do
   runReaderT (runConnHandler (handleConnection hdl)) env
 
 -- | Manages the handshake and adds the recognized client to the chat room.
+-- After the handshake, it forks the delivery loop and enters the main connection loop.
 handleConnection :: Handle -> ConnHandler ()
 handleConnection hdl = do
   client <- handshake hdl 
@@ -65,8 +67,10 @@ handleConnection hdl = do
     connLoop client
 
 -- AUXILIAR FUNCTIONS ---
--- | Handshake function, not fully implemented 
--- TODO modify this function to be the 
+
+-- | Performs the initial handshake with the client.
+-- Currently, it generates a unique guest name based on the client count.
+-- TODO: Implement proper handshake logic (e.g., authentication).
 handshake :: Handle -> ConnHandler Client
 handshake hdl = do 
     chan <- runSTM newTChan
@@ -82,15 +86,19 @@ handshake hdl = do
       clientChan = chan
   }
 
--- | Function to listen the Client 
+-- | The delivery loop is responsible for sending outgoing messages to the client.
+-- It runs in a dedicated thread, waits for messages in the client's TChan,
+-- and writes them directly to the client's network handle.
 deliveryLoop :: Client -> ConnHandler ()
 deliveryLoop 
   client@Client{clientHandle, clientChan} = do
   msg <- runSTM $ readTChan clientChan
-  -- NOTE remove this print 
   liftIO $ hPutStrLn clientHandle msg
   deliveryLoop client
 
+
+-- | The main connection loop for each client.
+-- It reads lines from the client's handle, parses them as requests, and handles them.
 connLoop :: Client -> ConnHandler()
 connLoop client = do
   -- TODO handle exception
@@ -100,10 +108,11 @@ connLoop client = do
     Just req -> handleRequest req
   connLoop client
 
+-- | Orchestrates the handling of different client requests.
 handleRequest :: PT.Request -> ConnHandler ()
 handleRequest req = case req of
   PT.Identify uname -> do
-    -- Existing logic for identification
+    -- NOTE: Dead code - existing logic for identification needs implementation
     -- NOTE Remove this print 
     liftIO $ putStrLn $ "Identifying user: " ++ show uname
   PT.SendPublicText msg -> do 
@@ -116,7 +125,7 @@ handleRequest req = case req of
          broadcast formatted
   _ -> liftIO $ putStrLn "Other requests not yet implemented"
 
--- | Returns Text formatted and encoded as UTF8
+-- | Formats a message with the sender's name.
 formatMsg :: Text -> ConnHandler ByteString
 formatMsg msg = do 
   mClient <- asks handlerClient
@@ -128,19 +137,18 @@ formatMsg msg = do
       in return $ pack formatted
  
 
-
--- MODIFYING SERVER STATE ---
+-- | Helper to lift STM actions into the ConnHandler monad.
 runSTM :: STM a -> ConnHandler a
 runSTM action = liftIO $ atomically action
 
--- TODO ubicate this alias correctly in servertypes 
--- TODO make this generalized for any rooom 
--- type Message = ByteString
+-- | Broadcasts a message to all connected clients.
+-- TODO: making this generalized for any room.
 broadcast :: ByteString -> ConnHandler()
 broadcast msg = do 
   stateVar <- asks serverState
   runSTM $ SST.broadcast stateVar msg
 
+-- | Adds a client to the server state.
 addClient :: Client -> ConnHandler ()
 addClient client = do
   stateVar <- asks serverState

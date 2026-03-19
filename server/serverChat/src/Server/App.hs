@@ -32,13 +32,12 @@ data SocketConfig = SocketConfig
 runServer :: SocketConfig -> IO ()
 runServer config = do
   -- BUILDS SOCKET ---- 
-  -- TODO improve readability
+  -- Creates a new socket with the specified family, type, and protocol.
   sock <- socket 
     (socketFamily config) 
     (socketType config) 
     (socketProtoN config)
-  -- TODO Investigate implementation
-  -- NOTE Web says to allow easier debugging
+  -- Set ReuseAddr to allow immediate restart of the server after a crash/stop.
   setSocketOption sock ReuseAddr 1
   serverLog "Socket has been created"
   -- LISTENING ----
@@ -82,8 +81,6 @@ defaultSocket =
     port = 8080
     host = tupleToHostAddress (127, 0, 0, 1)
 
--- NOTE this could imprve by defining a transformer and limiting the actions over the external monad
--- NOTE Similar to the model of my previous implementation
 -- | Server logging with format
 serverLog :: String -> IO ()
 serverLog msg = 
