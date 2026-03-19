@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Server.ServerTypes
   (
     Client(..),
     Room(..),
+    Status(..),
     RoomName,
     Username,
   )
@@ -10,6 +13,7 @@ import GHC.IO.Handle
 
 import Control.Concurrent.STM (TChan)
 import Data.ByteString (ByteString)
+import GHC.Generics (Generic)
 
 type Username = String
 type RoomName = String
@@ -23,10 +27,14 @@ data Room =
 
 -- TODO manage clientStatus with a enum/data
 type Messages = ByteString
+
+data Status = ACTIVE | AWAY | BUSY
+  deriving (Show, Eq, Generic)
+
 data Client =
   Client {
   clientName :: Username,
   clientHandle :: Handle,
-  clientStatus :: String,
+  clientStatus :: Status,
   clientChan :: TChan Messages
 }

@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 
+
 module Server.Parser.ParserTypes 
   ( Request(..)
-  , Status(..)
   )
 where 
 
@@ -11,9 +11,10 @@ import GHC.Generics (Generic)
 import Data.Aeson (FromJSON(..), (.:), withObject)
 import Data.Text (Text)
 
+-- NOTE this may cause problems due having to definitions of statu
+
 data Status = ACTIVE | AWAY | BUSY
   deriving (Show, Eq, Generic)
-
 instance FromJSON Status
 
 data Request

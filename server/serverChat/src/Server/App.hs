@@ -15,7 +15,7 @@ import Server.ConnectionHandler (runConn, HandlerEnv(..))
 import Server.ServerState (newServerState)
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.STM (newTVarIO, atomically)
+import Control.Concurrent.STM (atomically)
 
 -- | Socket configuration
 data SocketConfig = SocketConfig
