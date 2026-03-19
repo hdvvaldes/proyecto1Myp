@@ -16,5 +16,6 @@ Controller::Controller()
 // ---------------------------------------------
 
 void Controller::run() {
-  std::cout << "Controller. run"  << std::endl;
+  view_.showWelcome();
+  view_.showPrompt();
 }

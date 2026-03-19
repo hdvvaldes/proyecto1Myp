@@ -1,6 +1,5 @@
 #pragma once
 
-
 // ---------------------------------------------
 //  ANSI color helpers
 // ---------------------------------------------
@@ -33,5 +32,7 @@ public:
   View();
 
   void showWelcome();
+  
+  void showPrompt();
 
 };

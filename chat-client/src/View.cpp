@@ -17,4 +17,8 @@ void View::showWelcome() {
               << Color::DIM << " for a list of commands.\n\n" << Color::RESET;
 }
 
+void View::showPrompt() {
+    std::cout << Color::BRIGHT_BLUE << "> " << Color::RESET << std::flush;
+}
+
 
