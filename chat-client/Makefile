@@ -26,7 +26,9 @@ FL_LIB          := $(shell $(CXX) -lfl -x c++ /dev/null -o /dev/null 2>/dev/null
 LDFLAGS         += $(FL_LIB)
 
 # -- Source files ----
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+ALL_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+
+SRCS := $(ALL_SRCS) $(LEXER_SRC)
 
 # -- Object files
 OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
@@ -46,7 +48,6 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	@echo "LINKING FOR $@"
 	@echo "Object $^"
-
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 	@echo "Build complete: $(TARGET)"
 
@@ -73,8 +74,8 @@ run: all
 
 # -- cleaning --
 clean:
-	@echo "Cleaning artefacts"
-	rm -rf $(BUILD_DIR) $(TARGET) $(TEST_TARGET)
+	@echo "Cleaning artifects"
+	rm -rf $(BUILD_DIR) $(TARGET) $(TEST_TARGET) $(LEXER_SRC)
 
 # Flags that every translation unit sees (mirrors CXXFLAGS)
 CLANGD_FLAGS := $(CXXFLAGS)
