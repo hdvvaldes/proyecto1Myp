@@ -1,7 +1,9 @@
 %{
 #include "Token.hpp"
+#include "Lexer.hpp"
 #include <string>
 #include <sstream>
+struct LexerImpl;
 
 using namespace std;
 %}
@@ -55,4 +57,38 @@ WORD    [^ \t\n]+
 <SC_TEXT><<EOF>>        { BEGIN(INITIAL); return static_cast<int>(Token::END_OF_INPUT); }
 
 %%
+
+#include <sstream>
+
+struct LexerImpl {
+    std::istringstream stream;
+    ChatFlexLexer      scanner;
+    Token              lastToken  = Token::NONE;
+    std::string        lastLexeme;
+
+    LexerImpl() : scanner(&stream, nullptr) {}
+
+    void reset(const std::string& line) {
+        stream.clear();
+        stream.str(line + "\n");
+        scanner.switch_streams(&stream, nullptr);
+        lastToken  = Token::NONE;
+        lastLexeme.clear();
+    }
+};
+
+Lexer::Lexer()  : impl_(std::make_unique<LexerImpl>()) {}
+Lexer::~Lexer() = default;
+
+void Lexer::setInput(const std::string& line) { impl_->reset(line); }
+
+const std::string& Lexer::lexeme()      const { return impl_->lastLexeme; }
+Token              Lexer::currentToken() const { return impl_->lastToken;  }
+
+Token Lexer::nextToken() {
+    int raw = impl_->scanner.yylex();
+    impl_->lastLexeme = impl_->scanner.YYText();
+    impl_->lastToken  = static_cast<Token>(raw);
+    return impl_->lastToken;
+}
 
