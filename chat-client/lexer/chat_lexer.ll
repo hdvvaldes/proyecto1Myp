@@ -39,11 +39,12 @@ WORD    [^ \t\n]+
 <INITIAL>"/leave"       { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_LEAVE);     }
 
 <INITIAL>"/"[^ \t\n]+   { return static_cast<int>(Token::UNKNOWN_CMD); }
-<INITIAL>{WORD}[^\n]*   { return static_cast<int>(Token::RAW_TEXT);    }
+<INITIAL>[^/ \t\n][^\n]* { return static_cast<int>(Token::RAW_TEXT);    }
 <INITIAL>\n             { /* empty line */ }
 <INITIAL><<EOF>>        { return static_cast<int>(Token::END_OF_INPUT); }
 
 <SC_ARGS>{WS}           { /* skip */ }
+
 <SC_ARGS>{WORD}         { return static_cast<int>(Token::ARG); }
 <SC_ARGS>\n             { BEGIN(INITIAL); return static_cast<int>(Token::END_OF_LINE);  }
 <SC_ARGS><<EOF>>        { BEGIN(INITIAL); return static_cast<int>(Token::END_OF_INPUT); }
