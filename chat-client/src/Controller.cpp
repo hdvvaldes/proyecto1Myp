@@ -361,7 +361,7 @@ void Controller::dispatchServerEvent(
                                          }
                                        }
                                        else if (op == "INVITE") {
-                                         if (res != "SUCCESS")
+                                         if (res != "SUCCESS");
                                            //TODO view_.showInviteFailed(data.extra, res, data.extra);
                                        }
                                        else if (op == "JOIN_ROOM") {
@@ -391,7 +391,7 @@ void Controller::dispatchServerEvent(
                                          }
                                        }
                                        else if (op == "TEXT") {
-                                         if (res == "NO_SUCH_USER")
+                                         if (res == "NO_SUCH_USER");
                                            // TODO view_.showPrivateSentError(data.extra);
                                        }
                                        else if (op == "INVALID") {
