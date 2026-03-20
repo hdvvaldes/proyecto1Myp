@@ -95,6 +95,7 @@ void View::showPrompt() {
 
 // --- Connection ----
 void View::showConnected(const std::string& host, int port) {
+  clearCurrentLine();
   std::cout << Color::BRIGHT_GREEN 
     << "✔ Connected" << Color::RESET 
     << " to " 
@@ -104,6 +105,12 @@ void View::showConnected(const std::string& host, int port) {
     << Color::BRIGHT_WHITE 
     << "/identify <name>" << Color::RESET 
     << " to log in)\n";
+    showPrompt();
+}
+
+void View::showDisconnected() {
+    clearCurrentLine();
+    std::cout << Color::BRIGHT_YELLOW << "⚡ Disconnected from server.\n" << Color::RESET;
     showPrompt();
 }
 

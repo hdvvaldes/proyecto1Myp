@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Model.hpp"
+
 // ---------------------------------------------
 //  ANSI color helpers
 // ---------------------------------------------
@@ -32,24 +34,47 @@ class View {
 public: 
   View();
 
-  // -- Lifecycle --
+  // -- Lifecycle -------------
   void showWelcome();
   void showHelp();
   void showPrompt();
 
-  // -- Messages ------
+  // -- Conection Logging --------
+  void showConnected(const std::string& host, int port);
+  void showDisconnected();
+  void showConnectionError(const std::string& reason);
+
+  // -- Identify Logging --------
+  void showIdentified(const std::string& username);
+  void showIdentifyFailed(const std::string& username);
+
+  // -- Status Logging ----------
+  void showStatusChanged(const std::string& status);
+
+  // -- Global user events ------
+  void showNewUser(const std::string& username);
+  void showUserDisconnected(const std::string& username);
+  void showUserStatusChanged(const std::string& username, 
+      const std::string& status);
+
+  // -- Presenting Users ------
+  void showUserList(const std::map<std::string, UserStatus>& users);
+  void showRoomUserList(const std::string& roomname, const std::map<std::string, UserStatus>& users);
+
+  // -- Messages -----------------
   void showPublicMessage(const std::string& from, 
       const std::string& text);
 
-  // -- Conection Logging --------
-  void showConnected(const std::string& host, int port);
-
-  // -- Error Logging 
+  // -- Error Logging --------------
   void showError(const std::string& message);
   void showUnknownCommand(const std::string& input);
+  void showNotIdentified();
+
+  // -- Rooms ---------
 
 private:
   void clearCurrentLine();
-
+  std::string statusBadge(UserStatus status);
+  std::string statusBadge(const std::string& status);
 
 };
