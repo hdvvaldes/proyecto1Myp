@@ -8,7 +8,8 @@
 enum class UserStatus {
   ACTIVE,
   AWAY,
-  BUSY
+  BUSY,
+  UNKNOWN,
 };
 
 enum class ConnectionState {
