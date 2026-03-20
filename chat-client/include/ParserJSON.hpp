@@ -6,7 +6,6 @@ class MessageCodec {
 public:
     static std::string buildIdentify(
         const std::string& username);
-
     static std::string buildStatus(
         const std::string& status);
     static std::string buildUsers();

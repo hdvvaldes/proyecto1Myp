@@ -14,8 +14,7 @@
  *
  *  1. Read user input lines from stdin.
  *  2. Feed each line to the Lexer and drive token extraction 
- * TODO Change doc to class name parser ? 
- *  3. Validate arguments and build protocol messages via a factory of jsons.
+ *  3. Validate arguments and build protocol messages via ParserJSON
  *  4. Send messages through Connection.
  *  5. Receive server messages (via Connection callback -> handleServerMessage).
  *  6. Update the Model. If necessary.
@@ -78,7 +77,7 @@ private:
    * MUST BE called under mutex_
    * TODO I might move this function to other class due this one having to many handlers
    * */
-  void dispatchServerEvent(const std::string& data);
+  void dispatchServerEvent(const ModelEventData& data);
 
   // -- Utility --------
   
