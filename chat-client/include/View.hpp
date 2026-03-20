@@ -32,16 +32,24 @@ class View {
 public: 
   View();
 
+  // -- Lifecycle --
   void showWelcome();
-  
+  void showHelp();
   void showPrompt();
 
-  void showHelp();
+  // -- Messages ------
+  void showPublicMessage(const std::string& from, 
+      const std::string& text);
 
-  void showUnknownCommand(std::string unknown_cmd);
+  // -- Conection Logging --------
+  void showConnected(const std::string& host, int port);
 
-  void showError(std::string msg_error);
+  // -- Error Logging 
+  void showError(const std::string& message);
+  void showUnknownCommand(const std::string& input);
 
-  void showConnected(std::string host, int port);
+private:
+  void clearCurrentLine();
+
 
 };
