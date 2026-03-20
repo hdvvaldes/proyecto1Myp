@@ -27,19 +27,54 @@
 
 class Controller {
 public:
-    Controller();
-    ~Controller() = default;
+  Controller();
+  ~Controller() = default;
 
-    // Starts the interactive loop; returns when the user types /quit.
-    void run();
+  // Starts the interactive loop; returns when the user types /quit.
+  void run();
 
 private: 
-    Model      model_;
-    View       view_;
-    Connection connection_;
-    Lexer      lexer_;
+  Model model_;
+  View view_;
+  Connection connection_;
+  Lexer lexer_;
+  
+  /* Flag to indicate user qutting entirely */
+  bool quit_ = false;
 
+  // Input handling
+  void processLine(const std::string& line);
 
+  /* 
+   * Command handlers 
+   * (called after the lexer identifies the command)
+   * args : lexer reading input entry
+   * 
+   */ 
+  void handleConnect(Lexer& lx);
+  void handleIdentify(Lexer& lx);
+  void handleStatus(Lexer& lx);
+  void handleUsers();
+  void handleMsg(Lexer& lx);
+  void handlePub(Lexer& lx);
+  void handleNewRoom(Lexer& lx);
+  void handleInvite(Lexer& lx);
+  void handleJoin(Lexer& lx);
+  void handleRoomUsers(Lexer& lx);
+  void handleRoomText(Lexer& lx);
+  void handleLeave(Lexer& lx);
+  void handleDisconnect();
+  void handleQuit();
 
+  // -- Server message handling -----
+  void handleServerMessage(const std::string& jsonLine);
 
+  // -- Utility --------
+  
+  /* Gets exactly N following ARG tokens,
+   * returns false and shows error if not found
+   */ 
+  bool requireArgs(Lexer& lx, 
+      std::vector<std::string>& out, int n, 
+      const std::string& usage);
 };
