@@ -18,7 +18,7 @@ Controller::Controller()
         std::lock_guard<std::mutex> lock(mutex_);
         model_.setConnectionState(ConnectionState::DISCONNECTED);
         // TODO implement view function
-        // view_.showConnectionError(reason);
+        view_.showConnectionError(reason);
     });
 }
 
