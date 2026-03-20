@@ -1,6 +1,9 @@
 %{
-  #include<iostream>
-  using namespace std;
+#include "Token.hpp"
+#include <string>
+#include <sstream>
+
+using namespace std;
 %}
 
 %option c++
@@ -19,44 +22,37 @@ WORD    [^ \t\n]+
 
 <INITIAL>{WS}           { /* skip leading whitespace */ }
 
-<INITIAL>"/help"        { std::cout << "found: " << yytext << std::endl; }
-<INITIAL>"/quit"        { std::cout << "found: " << yytext << std::endl;  }
-<INITIAL>"/disconnect"  { std::cout << "found: " << yytext << std::endl;  }
-<INITIAL>"/users"       { std::cout << "found: " << yytext << std::endl;  }
+<INITIAL>"/help"        { return static_cast<int>(Token::CMD_HELP);       }
+<INITIAL>"/quit"        { return static_cast<int>(Token::CMD_QUIT);       }
+<INITIAL>"/disconnect"  { return static_cast<int>(Token::CMD_DISCONNECT); }
+<INITIAL>"/users"       { return static_cast<int>(Token::CMD_USERS);      }
 
-<INITIAL>"/connect"     { BEGIN(SC_ARGS); }
-<INITIAL>"/identify"    { BEGIN(SC_ARGS); }
-<INITIAL>"/status"      { BEGIN(SC_ARGS); }
-<INITIAL>"/msg"         { BEGIN(SC_ARGS); }
-<INITIAL>"/pub"         { BEGIN(SC_TEXT); }
-<INITIAL>"/newroom"     { BEGIN(SC_ARGS); }
-<INITIAL>"/invite"      { BEGIN(SC_ARGS); }
-<INITIAL>"/join"        { BEGIN(SC_ARGS); }
-<INITIAL>"/roomusers"   { BEGIN(SC_ARGS); }
-<INITIAL>"/roomtext"    { BEGIN(SC_ARGS); }
-<INITIAL>"/leave"       { BEGIN(SC_ARGS); }
+<INITIAL>"/connect"     { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_CONNECT);   }
+<INITIAL>"/identify"    { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_IDENTIFY);  }
+<INITIAL>"/status"      { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_STATUS);    }
+<INITIAL>"/msg"         { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_MSG);       }
+<INITIAL>"/pub"         { BEGIN(SC_TEXT); return static_cast<int>(Token::CMD_PUB);       }
+<INITIAL>"/newroom"     { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_NEWROOM);   }
+<INITIAL>"/invite"      { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_INVITE);    }
+<INITIAL>"/join"        { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_JOIN);      }
+<INITIAL>"/roomusers"   { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_ROOMUSERS); }
+<INITIAL>"/roomtext"    { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_ROOMTEXT);  }
+<INITIAL>"/leave"       { BEGIN(SC_ARGS); return static_cast<int>(Token::CMD_LEAVE);     }
 
-<INITIAL>"/"[^ \t\n]+   { /* otherwise case */}
-<INITIAL>{WORD}[^\n]*   { /* just text  */}
+<INITIAL>"/"[^ \t\n]+   { return static_cast<int>(Token::UNKNOWN_CMD); }
+<INITIAL>{WORD}[^\n]*   { return static_cast<int>(Token::RAW_TEXT);    }
 <INITIAL>\n             { /* empty line */ }
-<INITIAL><<EOF>>        { /* end of file*/}
+<INITIAL><<EOF>>        { return static_cast<int>(Token::END_OF_INPUT); }
 
 <SC_ARGS>{WS}           { /* skip */ }
-<SC_ARGS>{WORD}         { }
-<SC_ARGS>\n             { BEGIN(INITIAL); }
-<SC_ARGS><<EOF>>        { BEGIN(INITIAL); }
+<SC_ARGS>{WORD}         { return static_cast<int>(Token::ARG); }
+<SC_ARGS>\n             { BEGIN(INITIAL); return static_cast<int>(Token::END_OF_LINE);  }
+<SC_ARGS><<EOF>>        { BEGIN(INITIAL); return static_cast<int>(Token::END_OF_INPUT); }
 
 <SC_TEXT>{WS}           { /* skip leading whitespace before body */ }
-<SC_TEXT>[^ \t\n][^\n]* { BEGIN(INITIAL); }
-<SC_TEXT>\n             { BEGIN(INITIAL); }
-<SC_TEXT><<EOF>>        { BEGIN(INITIAL); }
+<SC_TEXT>[^ \t\n][^\n]* { BEGIN(INITIAL); return static_cast<int>(Token::TEXT_BODY);    }
+<SC_TEXT>\n             { BEGIN(INITIAL); return static_cast<int>(Token::END_OF_LINE);  }
+<SC_TEXT><<EOF>>        { BEGIN(INITIAL); return static_cast<int>(Token::END_OF_INPUT); }
 
 %%
 
- /* TODO remove this main function*/
-
-int main() {
-  FlexLexer* lexer = new yyFlexLexer;
-  lexer->yylex();
-  return 0;
-}
