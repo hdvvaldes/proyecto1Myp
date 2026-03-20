@@ -32,7 +32,7 @@ void Controller::processLine(const std::string& line) {
 
   switch (tok) {
     case Token::CMD_HELP:
-      // view_.showHelp();
+      view_.showHelp();
       break;
     case Token::CMD_QUIT:
       handleQuit();
@@ -78,11 +78,11 @@ void Controller::processLine(const std::string& line) {
       break;
     // Unrecognized commands
     case Token::UNKNOWN_CMD:
-      // view_.showUnknownCommand(lexer_.lexeme());
+      view_.showUnknownCommand(lexer_.lexeme());
       break;
 
     case Token::RAW_TEXT:
-      // view_.showUnknownCommand(line);
+      view_.showUnknownCommand(line);
       break;
     default:
       view_.showPrompt();
@@ -107,17 +107,16 @@ void Controller::handleConnect(Lexer& lx) {
     try { 
       port = std::stoi(args[1]); 
     } catch (...) { 
-      // view_.showError("Invalid port: " + args[1]); 
+      view_.showError("Invalid port: " + args[1]); 
       return;
     }
     // TODO this might cause problems in future
-    // TODO how to manage being identified and running 
-    // /connect 
+    // TODO how to manage being identified and running /connect 
     if (connection_.isConnected()) 
       connection_.disconnect();
     model_.setConnectionState(ConnectionState::CONNECTED);
     if (connection_.connect(host, port)) {
-        // view_.showConnected(host, port);
+        view_.showConnected(host, port);
     } else {
         model_.setConnectionState(ConnectionState::DISCONNECTED);
     }
@@ -132,7 +131,7 @@ void Controller::handlePub(Lexer& lx) {
     // TODO manage not being identified
     Token tk = lx.nextToken();
     if (tk != Token::TEXT_BODY && tk != Token::ARG) {
-        // view_.showError("Usage: /pub <text>");
+        view_.showError("Usage: /pub <text>");
         return;
     }
     std::string text = lx.lexeme();
@@ -151,7 +150,7 @@ bool Controller::requireArgs(Lexer& lx,
     for (int i = 0; i < n; ++i) {
         Token tk = lx.nextToken();
         if (tk != Token::ARG) {
-            // view_.showError("Usage: " + usage);
+            view_.showError("Usage: " + usage);
             return false;
         }
         out.push_back(lx.lexeme());

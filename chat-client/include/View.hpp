@@ -5,6 +5,7 @@
 // ---------------------------------------------
 
 
+#include <string>
 namespace Color {
     constexpr const char* RESET   = "\033[0m";
     constexpr const char* BOLD    = "\033[1m";
@@ -34,5 +35,13 @@ public:
   void showWelcome();
   
   void showPrompt();
+
+  void showHelp();
+
+  void showUnknownCommand(std::string unknown_cmd);
+
+  void showError(std::string msg_error);
+
+  void showConnected(std::string host, int port);
 
 };
