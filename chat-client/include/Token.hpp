@@ -30,4 +30,3 @@ enum class Token {
   END_OF_INPUT,
   NONE
 };
-

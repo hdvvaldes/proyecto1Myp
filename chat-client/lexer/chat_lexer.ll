@@ -14,7 +14,7 @@ using namespace std;
 %x SC_TEXT
 
 /* WhiteSpace */
-WS      [ \t]+ 
+WS      [ \t]+
 
 WORD    [^ \t\n]+
 

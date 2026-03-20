@@ -1,16 +1,24 @@
-#pragma once 
+#include "Connection.hpp"
 
-/*
- * Connection
- *
- * Thin TCP socket wrapper that:
- *   - connects to host:port
- *   - sends newline-terminated JSON messages
- *   - receives messages in a background thread and invokes a callback
- *   - is NOT thread-safe for send() calls (caller must serialise if needed)
- */
-class Connection {
-public:
-    Connection();
-    ~Connection();
-};
+Connection::Connection() = default;
+
+Connection::~Connection() {
+    disconnect();
+}
+
+bool Connection::connect(const std::string& host, int port){
+  return true;
+}
+
+void Connection::disconnect() {
+    running_ = false;
+}
+
+bool Connection::send(const std::string& json){
+  return true;
+}
+
+bool Connection::isConnected(){
+  return running_;
+}
+
