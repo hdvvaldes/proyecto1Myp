@@ -5,14 +5,19 @@
  *
  */
 
-#include "Token.hpp"
+
+#ifndef FLEX_SCANNER
 #include <FlexLexer.h>
+#endif
+#include "Token.hpp"
 #include <sstream>
 #include <string>
 
 class Lexer : public yyFlexLexer {
 public:
     explicit Lexer(std::istream& in = std::cin);
+    
+    ~Lexer() = default;
 
     // Feed a new line to the scanner; resets all internal state.
     void  setInput(const std::string& line);
