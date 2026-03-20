@@ -22,6 +22,10 @@ public:
     Connection();
     ~Connection();
 
+    // Forcing singleton usage
+    Connection(const Connection&)            = delete;
+    Connection& operator=(const Connection&) = delete;
+
     bool connect(const std::string& host, int port);
     void disconnect();
 
