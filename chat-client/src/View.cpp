@@ -10,7 +10,24 @@ void View::clearCurrentLine() {
     std::cout << "\r\033[K";
 }
 
-// --- Lifecycle ---
+std::string View::statusBadge(UserStatus status) {
+    switch (status) {
+        case UserStatus::ACTIVE:  return std::string(Color::BRIGHT_GREEN)  + "●" + Color::RESET;
+        case UserStatus::AWAY:    return std::string(Color::BRIGHT_YELLOW) + "●" + Color::RESET;
+        case UserStatus::BUSY:    return std::string(Color::BRIGHT_RED)    + "●" + Color::RESET;
+        default:                  return std::string(Color::DIM)           + "●" + Color::RESET;
+    }
+}
+
+// TODO implemten
+std::string View::statusBadge(const std::string& status) {
+    return "";
+}
+
+// ------------------------
+// --- Lifecycle ----------
+// ------------------------
+
 void View::showWelcome() {
   std::cout << "\n";
   std::cout << Color::BRIGHT_CYAN << Color::BOLD;
@@ -29,6 +46,7 @@ void View::showHelp() {
   std::cout << Color::BOLD << Color::BRIGHT_WHITE
     << "  ─── Commands ──────\n" 
     << Color::RESET;
+  /* Format Row */
   auto row = 
     [](const std::string& cmd, const std::string& desc) {
       std::cout << "  " 
@@ -39,7 +57,6 @@ void View::showHelp() {
         << desc 
         << Color::RESET << "\n";
     };
-
   std::cout << "\n  " 
     << Color::YELLOW 
     << "Connection\n" << Color::RESET;
@@ -88,12 +105,15 @@ void View::showHelp() {
 }
 
 void View::showPrompt() {
-  std::cout 
-    << Color::BRIGHT_BLUE << "> " << Color::RESET 
-    << std::flush;
+  std::cout <<
+    Color::BRIGHT_BLUE << "> " << Color::RESET <<
+    std::flush;
 }
 
-// --- Connection ----
+//--------------------------------------------------
+// --- Connection -------------------------
+// --------------------------------------------------
+
 void View::showConnected(const std::string& host, int port) {
   clearCurrentLine();
   std::cout << Color::BRIGHT_GREEN 
@@ -105,13 +125,107 @@ void View::showConnected(const std::string& host, int port) {
     << Color::BRIGHT_WHITE 
     << "/identify <name>" << Color::RESET 
     << " to log in)\n";
-    showPrompt();
+  showPrompt();
 }
 
 void View::showDisconnected() {
+  clearCurrentLine();
+  std::cout << Color::BRIGHT_YELLOW << 
+    "⚡ Disconnected from server.\n" << Color::RESET;
+  showPrompt();
+}
+
+void View::showConnectionError(const std::string& reason) {
+  clearCurrentLine();
+  std::cout 
+    << Color::BRIGHT_RED 
+    << "✖ Connection error: " 
+    << Color::RESET << reason << "\n";
+  showPrompt();
+}
+
+// ----------------------------
+// --- Indetify --------------
+// ----------------------------
+
+void View::showIdentified(const std::string& username) {
+  clearCurrentLine();
+  std::cout << Color::BRIGHT_GREEN << 
+    "✔ Identified as " << Color::RESET << 
+    Color::BOLD << username << Color::RESET << "\n";
+  showPrompt();
+}
+
+void View::showIdentifyFailed(const std::string& username) {
+  clearCurrentLine();
+  std::cout << Color::BRIGHT_RED << 
+    "✖ Username '" << username << 
+    "' is already taken.\n" << Color::RESET;
+  showPrompt();
+}
+
+void View::showStatusChanged(const std::string& status) {
+  clearCurrentLine();
+  std::cout << statusBadge(status) << 
+    " Your status is now " << Color::BOLD << 
+    status << Color::RESET << "\n";
+  showPrompt();
+}
+
+/* --------------------------------
+ * ---- Presenting Users
+ * --------------------------------
+ */
+
+void View::showUserList(const std::map<std::string, 
+    UserStatus>& users) {
     clearCurrentLine();
-    std::cout << Color::BRIGHT_YELLOW << "⚡ Disconnected from server.\n" << Color::RESET;
+    std::cout << "\n  " 
+      << Color::BOLD << Color::BRIGHT_WHITE 
+      << "Online users (" << users.size() << ")\n" 
+      << Color::RESET;
+    for (auto& [name, status] : users) {
+        std::cout << "    " << statusBadge(status) << "  "
+                  << std::left << std::setw(12) << name
+                  << Color::DIM << Model::statusToString(status) << Color::RESET << "\n";
+    }
+    std::cout << "\n";
     showPrompt();
+}
+
+void View::showRoomUserList(const std::string& roomname,
+                             const std::map<std::string, UserStatus>& users) {
+    clearCurrentLine();
+    std::cout << "\n  " << Color::BOLD << Color::BRIGHT_WHITE
+              << "Users in " << Color::BRIGHT_CYAN << "#" << roomname
+              << Color::BRIGHT_WHITE << " (" << users.size() << ")\n" << Color::RESET;
+    for (auto& [name, status] : users) {
+        std::cout << "    " << statusBadge(status) << "  "
+                  << std::left << std::setw(12) << name
+                  << Color::DIM << Model::statusToString(status) << Color::RESET << "\n";
+    }
+    std::cout << "\n";
+    showPrompt();
+}
+
+
+
+
+/* --------------------------------
+ * ---- Messages ---------
+ * --------------------------------
+ */
+
+void View::showPublicMessage(const std::string& from, 
+    const std::string& text) {
+  clearCurrentLine(); 
+  std::cout 
+    << Color::BRIGHT_WHITE << Color::BOLD 
+    << from << Color::RESET 
+    << Color::WHITE 
+    << " (public): " << Color::RESET 
+    << text << "\n";
+  showPrompt();
 }
 
 /*
@@ -119,27 +233,17 @@ void View::showDisconnected() {
  */
 
 void View::showError(const std::string& message) {
-    clearCurrentLine();
-    std::cout << Color::BRIGHT_RED << "✖ " << message << Color::RESET << "\n";
-    showPrompt();
+  clearCurrentLine();
+  std::cout << Color::BRIGHT_RED << "✖ " << message << Color::RESET << "\n";
+  showPrompt();
 }
 
 void View::showUnknownCommand(const std::string& input) {
-    clearCurrentLine();
-    std::cout << Color::BRIGHT_RED << "✖ Unknown command: " << Color::RESET
-              << Color::DIM << input << Color::RESET
-              << "  (type " << Color::BRIGHT_WHITE << "/help" << Color::RESET << " for help)\n";
-    showPrompt();
+  clearCurrentLine();
+  std::cout << Color::BRIGHT_RED 
+    << "✖ Unknown command: " << Color::RESET 
+    << Color::DIM << input << Color::RESET
+    << "  (type " << Color::BRIGHT_WHITE << "/help" << Color::RESET << " for help)\n";
+  showPrompt();
 }
 
-void View::showPublicMessage(const std::string& from, 
-    const std::string& text) {
-    clearCurrentLine(); 
-    std::cout 
-      << Color::BRIGHT_WHITE << Color::BOLD 
-      << from << Color::RESET 
-      << Color::WHITE 
-      << " (public): " << Color::RESET 
-      << text << "\n";
-    showPrompt();
-}

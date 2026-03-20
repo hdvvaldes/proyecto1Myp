@@ -19,7 +19,7 @@ enum class ConnectionState {
 
 struct RoomInfo {
     std::string roomname;
-    // username → status
+    // username -> status
     std::map<std::string, UserStatus> users;  
 };
 
@@ -74,6 +74,23 @@ public:
 
   bool isInRoom(const std::string& roomname) const;
   bool isInvitedToRoom(const std::string& roomname) const;
+
+  // -------------------------------------
+  // --- Event system -------------------
+  // -------------------------------------
+
+  void setEventCallback(EventCallback cb) { 
+    callback_ = std::move(cb); 
+  }
+
+  // -------------------------------------
+  // -- Utility  -----------------------
+  // -------------------------------------
+
+  static std::string statusToString(UserStatus status);
+
+  static UserStatus statusFromString(const std::string& s);
+
 private:
   ConnectionState connectionState_ = ConnectionState::DISCONNECTED;
   std::string username_;
@@ -85,5 +102,7 @@ private:
   // TODO Overkill set?
   // Pending invitations
   std::set<std::string> invitations_; 
+  
+  EventCallback callback_;
 };
 
