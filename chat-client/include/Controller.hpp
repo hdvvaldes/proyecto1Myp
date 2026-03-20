@@ -69,7 +69,9 @@ private:
   void handleDisconnect();
   void handleQuit();
 
-  /* Sends json to server */
+  /* Sends json to server 
+   * MUST BE called under mutex_
+   */
   void handleServerMessage(const std::string& jsonLine);
 
   /* Manages state changes in the model 

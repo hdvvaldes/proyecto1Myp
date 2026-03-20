@@ -35,7 +35,7 @@ void Controller::run() {
 }
 
 /*
- * Runs a command handler based on the lexer 
+ * Runs a command handler based on the lexer
  * first token
  */
 void Controller::processLine(const std::string& line) {
@@ -111,24 +111,24 @@ void Controller::processLine(const std::string& line) {
 // --------------------------------
 
 /*
- * Handler for 
+ * Handler for
  * /connect <host> <port>
  */
 void Controller::handleConnect(Lexer& lx) {
     std::vector<std::string> args;
-    if (!requireArgs(lx, args, 2, 
+    if (!requireArgs(lx, args, 2,
           "/connect <host> <port>")) return;
     const std::string& host = args[0];
     int port = 0;
-    try { 
-      port = std::stoi(args[1]); 
-    } catch (...) { 
-      view_.showError("Invalid port: " + args[1]); 
+    try {
+      port = std::stoi(args[1]);
+    } catch (...) {
+      view_.showError("Invalid port: " + args[1]);
       return;
     }
     // TODO this might cause problems in future
-    // TODO manage being identified and running /connect 
-    if (connection_.isConnected()) 
+    // TODO manage being identified and running /connect
+    if (connection_.isConnected())
       connection_.disconnect();
     model_.setConnectionState(ConnectionState::CONNECTED);
     if (connection_.connect(host, port)) {
@@ -151,7 +151,7 @@ void Controller::handleMsg(Lexer& lx){
 }
 
 /*
- * Handler to manage 
+ * Handler to manage
  * /pub <message>
  */
 void Controller::handlePub(Lexer& lx) {
@@ -194,8 +194,7 @@ void Controller::handleQuit(){
 
 void Controller::handleServerMessage(
     const std::string& jsonLine) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  
+    std::lock_guard<std::mutex> lock(mutex_);
   // TODO auto data = Parser::parse(jsonLine);
   // TODO dispatchServerEvent(data);
 }
@@ -205,12 +204,12 @@ void Controller::dispatchServerEvent(
   // TODO manage dispatcher
 }
 
-/* 
+/*
  * Utility Functions
  */
 
-bool Controller::requireArgs(Lexer& lx, 
-    std::vector<std::string>& out, int n, 
+bool Controller::requireArgs(Lexer& lx,
+    std::vector<std::string>& out, int n,
     const std::string& usage) {
   out.clear();
   for (int i = 0; i < n; ++i) {
