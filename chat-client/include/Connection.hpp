@@ -26,8 +26,10 @@ public:
     bool isConnected();
 
 private:
-    void recvLoop();
+    
     std::thread recvThread_;
-    bool running_ = false;
+    bool        running_ = false;
+
+    void recvLoop();
 
 };
