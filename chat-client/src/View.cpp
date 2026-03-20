@@ -185,9 +185,11 @@ void View::showUserList(const std::map<std::string,
       << "Online users (" << users.size() << ")\n" 
       << Color::RESET;
     for (auto& [name, status] : users) {
-        std::cout << "    " << statusBadge(status) << "  "
-                  << std::left << std::setw(12) << name
-                  << Color::DIM << Model::statusToString(status) << Color::RESET << "\n";
+        std::cout << "    " 
+          << statusBadge(status) << "  " 
+          << std::left << std::setw(12) 
+          << name << Color::DIM 
+          << Model::statusToString(status) << Color::RESET << "\n";
     }
     std::cout << "\n";
     showPrompt();
