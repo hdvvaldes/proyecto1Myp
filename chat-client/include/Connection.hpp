@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <functional>
 #include <string>
 #include <thread>
 
@@ -13,7 +14,11 @@
  */
 class Connection {
 public:
-    // TODO investigate callback hehe
+    using MessageCallback = std::function<void(
+        const std::string& jsonLine)>;
+    using ErrorCallback = std::function<void(
+        const std::string& reason)>;
+
     // TODO investigate socket
     Connection();
     ~Connection();
@@ -23,13 +28,28 @@ public:
     // Send a JSON string followed by '\n'
     bool send(const std::string& json);
 
-    bool isConnected();
+    bool isConnected() const {
+      return fd_ >= 0;
+    }
+
+    void setMessageCallback(MessageCallback cb) { 
+      onMessage_ = std::move(cb); 
+    }
+    void setErrorCallback(ErrorCallback cb) { 
+      onError_   = std::move(cb); 
+    }
+
+
 
 private:
-    
-    std::thread recvThread_;
-    bool        running_ = false;
-
     void recvLoop();
+    
+    /* socket */
+    int fd_ = -1;
+    std::thread recvThread_;
+    bool running_ = false;
+
+    MessageCallback  onMessage_;
+    ErrorCallback    onError_;
 
 };
