@@ -8,18 +8,17 @@
 
 Controller::Controller()
 {
-    // Wire up the Connection callbacks
-    connection_.setMessageCallback(
-        [this](const std::string& json) {
-        handleServerMessage(json);
-    });
-    connection_.setErrorCallback(
-        [this](const std::string& reason) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        model_.setConnectionState(ConnectionState::DISCONNECTED);
-        // TODO implement view function
-        view_.showConnectionError(reason);
-    });
+  // Wire up the Connection callbacks
+  connection_.setMessageCallback(
+      [this](const std::string& json) {
+      handleServerMessage(json);
+      });
+  connection_.setErrorCallback(
+      [this](const std::string& reason) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      model_.setConnectionState(ConnectionState::DISCONNECTED);
+      view_.showConnectionError(reason);
+      });
 }
 
 /* Infinite cycle reading user input */
@@ -142,12 +141,15 @@ void Controller::handleIdentify(Lexer& lx){
 }
 
 void Controller::handleStatus(Lexer& lx){
+
 }
 
 void Controller::handleUsers(){
+
 }
 
 void Controller::handleMsg(Lexer& lx){
+
 }
 
 /*
@@ -167,27 +169,35 @@ void Controller::handlePub(Lexer& lx) {
 }
 
 void Controller::handleNewRoom(Lexer& lx){
+
 }
 
 void Controller::handleInvite(Lexer& lx){
+
 }
 
 void Controller::handleJoin(Lexer& lx){
+
 }
 
 void Controller::handleRoomUsers(Lexer& lx){
+
 }
 
 void Controller::handleRoomText(Lexer& lx){
+
 }
 
 void Controller::handleLeave(Lexer& lx){
+
 }
 
 void Controller::handleDisconnect(){
+
 }
 
 void Controller::handleQuit(){
+
 }
 
 // -- Server message handling -----
