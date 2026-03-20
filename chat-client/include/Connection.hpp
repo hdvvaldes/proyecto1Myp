@@ -19,9 +19,9 @@ public:
     using ErrorCallback = std::function<void(
         const std::string& reason)>;
 
-    // TODO investigate socket
     Connection();
     ~Connection();
+
     bool connect(const std::string& host, int port);
     void disconnect();
 
@@ -38,8 +38,6 @@ public:
     void setErrorCallback(ErrorCallback cb) { 
       onError_   = std::move(cb); 
     }
-
-
 
 private:
     void recvLoop();

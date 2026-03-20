@@ -21,6 +21,11 @@ void Controller::run() {
   }
 }
 
+/*
+ * Runs a command handler based on the lexer 
+ * first token
+ */
+
 void Controller::processLine(const std::string& line) {
   if (line.empty()) {
     view_.showPrompt();
@@ -157,7 +162,3 @@ bool Controller::requireArgs(Lexer& lx,
     }
     return true;
 }
-
-
-
-
