@@ -25,7 +25,11 @@ CXXFLAGS        += -DUSE_FLEX_LEXER
 FL_LIB          := $(shell $(CXX) -lfl -x c++ /dev/null -o /dev/null 2>/dev/null && echo "-lfl")
 LDFLAGS         += $(FL_LIB)
 
-# -- Source files ----
+# ---------------------------------------
+# -- Source files --------------------------
+# ---------------------------------------
+
+
 ALL_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 
 SRCS := $(ALL_SRCS) $(LEXER_SRC)
@@ -39,7 +43,7 @@ DEPS := $(OBJS:.o=.d)
 # Targets
 # =========================
 
-.PHONY: all flex clean distclean run help
+.PHONY: all clean distclean run help
 
 # Default goal
 all: $(TARGET)
