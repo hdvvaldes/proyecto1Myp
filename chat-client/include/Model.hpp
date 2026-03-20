@@ -18,17 +18,71 @@ enum class ConnectionState {
     IDENTIFIED       // Identified with a username
 };
 
+struct UserInfo {
+    std::string username;
+    UserStatus  status = UserStatus::ACTIVE;
+};
+
 struct RoomInfo {
     std::string roomname;
     // username -> status
     std::map<std::string, UserStatus> users;  
 };
 
+/*
+ * Model events
+ */
+
+enum class ModelEvent {
+    // Connection
+    CONNECTED,
+    DISCONNECTED,
+    IDENTIFIED,
+
+    // Global user events
+    NEW_USER,
+    USER_DISCONNECTED,
+    STATUS_CHANGED,
+    USER_LIST_UPDATED,
+
+    // Private message
+    TEXT_RECEIVED,
+
+    // Public message
+    PUBLIC_TEXT_RECEIVED,
+
+    // Room events
+    ROOM_CREATED,
+    INVITED_TO_ROOM,
+    JOINED_ROOM,
+    USER_JOINED_ROOM,
+    USER_LEFT_ROOM,
+    ROOM_USER_LIST_UPDATED,
+    ROOM_TEXT_RECEIVED,
+    LEFT_ROOM,
+
+    // Errors / server responses
+    ERROR_RESPONSE,
+    SUCCESS_RESPONSE
+};
+
+struct ModelEventData {
+    ModelEvent  event;
+    std::string username;
+    std::string roomname;
+    std::string text;
+    std::string operation;
+    std::string result;
+    std::string extra;
+    UserStatus  status = UserStatus::ACTIVE;
+    std::map<std::string, UserStatus> users;
+};
+
 class Model {
 public:
-  // TODO Replace **const Model** for the correct data type
-  // TODO Investigate how to use callback
-  using EventCallback = std::function<void(const Model)>;
+  using EventCallback = 
+      std::function<void(const ModelEventData&)>;
+
   Model();
 
   // -- State Modifiers -----
