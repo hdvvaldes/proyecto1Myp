@@ -55,7 +55,6 @@ void Connection::disconnect() {
     ::close(fd_);
     fd_ = -1;
   }
-  // TODO investigate .joinable
   if (recvThread_.joinable())
     recvThread_.join();
 }

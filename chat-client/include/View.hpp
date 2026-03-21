@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Model.hpp"
+#include <map>
+#include <string>
 
 // ---------------------------------------------
 //  ANSI color helpers
 // ---------------------------------------------
 
-
-#include <string>
 namespace Color {
     constexpr const char* RESET   = "\033[0m";
     constexpr const char* BOLD    = "\033[1m";
@@ -31,50 +31,59 @@ namespace Color {
 }
 
 class View {
-public: 
-  View();
+public:
+    View();
 
-  // -- Lifecycle -------------
-  void showWelcome();
-  void showHelp();
-  void showPrompt();
+    // -- Lifecycle -------------
+    void showWelcome();
+    void showHelp();
+    void showPrompt();
 
-  // -- Conection Logging --------
-  void showConnected(const std::string& host, int port);
-  void showDisconnected();
-  void showConnectionError(const std::string& reason);
+    // -- Connection Logging --------
+    void showConnected(const std::string& host, int port);
+    void showDisconnected();
+    void showConnectionError(const std::string& reason);
 
-  // -- Identify Logging --------
-  void showIdentified(const std::string& username);
-  void showIdentifyFailed(const std::string& username);
+    // -- Identity / Status --------
+    void showIdentified(const std::string& username);
+    void showIdentifyFailed(const std::string& username);
+    void showStatusChanged(const std::string& status);
+    void showNotIdentified();
 
-  // -- Status Logging ----------
-  void showStatusChanged(const std::string& status);
+    // -- Global user events ------
+    void showNewUser(const std::string& username);
+    void showUserDisconnected(const std::string& username);
+    void showUserStatusChanged(const std::string& username, const std::string& status);
 
-  // -- Global user events ------
-  void showNewUser(const std::string& username);
-  void showUserDisconnected(const std::string& username);
-  void showUserStatusChanged(const std::string& username, 
-      const std::string& status);
+    // -- User lists ------
+    void showUserList(const std::map<std::string, UserStatus>& users);
+    void showRoomUserList(const std::string& roomname, const std::map<std::string, UserStatus>& users);
 
-  // -- Presenting Users ------
-  void showUserList(const std::map<std::string, UserStatus>& users);
-  void showRoomUserList(const std::string& roomname, const std::map<std::string, UserStatus>& users);
+    // -- Messages -----------------
+    void showPrivateMessage(const std::string& from, const std::string& text);
+    void showPrivateSentError(const std::string& toUser);
+    void showPublicMessage(const std::string& from, const std::string& text);
+    void showRoomMessage(const std::string& roomname, const std::string& from, const std::string& text);
 
-  // -- Messages -----------------
-  void showPublicMessage(const std::string& from, 
-      const std::string& text);
+    // -- Room events --------------
+    void showRoomCreated(const std::string& roomname);
+    void showRoomCreateFailed(const std::string& roomname, const std::string& reason);
+    void showInvitation(const std::string& from, const std::string& roomname);
+    void showInviteFailed(const std::string& roomname, const std::string& reason, const std::string& extra = "");
+    void showJoinedRoom(const std::string& roomname);
+    void showJoinFailed(const std::string& roomname, const std::string& reason);
+    void showUserJoinedRoom(const std::string& roomname, const std::string& username);
+    void showUserLeftRoom(const std::string& roomname, const std::string& username);
+    void showLeftRoom(const std::string& roomname);
+    void showLeaveRoomFailed(const std::string& roomname, const std::string& reason);
 
-  // -- Error Logging --------------
-  void showError(const std::string& message);
-  void showUnknownCommand(const std::string& input);
-  void showNotIdentified();
-
-  // -- Rooms ---------
+    // -- Error Logging --------------
+    void showError(const std::string& message);
+    void showUnknownCommand(const std::string& input);
 
 private:
-  void clearCurrentLine();
-  std::string statusBadge(UserStatus status);
-  std::string statusBadge(const std::string& status);
-
+    void clearCurrentLine();
+    void printLine(const std::string& prefix, const std::string& colorCode, const std::string& message);
+    std::string statusBadge(UserStatus status);
+    std::string statusBadge(const std::string& status);
 };

@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include <algorithm>
 
 Model::Model() = default;
 
@@ -18,7 +19,7 @@ void Model::setUserStatus(UserStatus status) {
     myStatus_ = status;
     auto it = users_.find(username_);
     if (it != users_.end())
-      it->second = status;
+        it->second = status;
 }
 
 //---------------------------
@@ -114,25 +115,16 @@ bool Model::isInvitedToRoom(const std::string& roomname) const {
 
 std::string Model::statusToString(UserStatus status) {
     switch (status) {
-        case UserStatus::ACTIVE: 
-          return "ACTIVE";
-        case UserStatus::AWAY: 
-          return "AWAY";
-        case UserStatus::BUSY: 
-          return "BUSY";
-        default: 
-          return "UNKNOWN";
+        case UserStatus::ACTIVE:  return "ACTIVE";
+        case UserStatus::AWAY:    return "AWAY";
+        case UserStatus::BUSY:    return "BUSY";
+        default:                  return "UNKNOWN";
     }
 }
 
 UserStatus Model::statusFromString(const std::string& s) {
-    if (s == "ACTIVE")
-      return UserStatus::ACTIVE;
-    if (s == "AWAY")
-      return UserStatus::AWAY;
-    if (s == "BUSY")
-      return UserStatus::BUSY;
+    if (s == "ACTIVE") return UserStatus::ACTIVE;
+    if (s == "AWAY")   return UserStatus::AWAY;
+    if (s == "BUSY")   return UserStatus::BUSY;
     return UserStatus::UNKNOWN;
 }
-
-
