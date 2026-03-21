@@ -11,7 +11,8 @@ where
 
 import Network.Socket
 
-import Server.ConnectionHandler (runConn, HandlerEnv(..))
+import Server.ConnectionHandler (runConn)
+import Server.Connection.Types (HandlerEnv(..))
 import Server.ServerState (newServerState)
 
 import Control.Concurrent (forkIO)

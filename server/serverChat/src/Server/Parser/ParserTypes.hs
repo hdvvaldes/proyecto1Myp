@@ -7,14 +7,11 @@ module Server.Parser.ParserTypes
   )
 where 
 
-import GHC.Generics (Generic)
-import Data.Aeson (FromJSON(..), (.:), withObject)
 import Data.Text (Text)
+import Data.Aeson (FromJSON(..), (.:), withObject)
+import GHC.Generics (Generic)
+import Server.ServerTypes (Status(..))
 
--- NOTE this may cause problems due having to definitions of statu
-
-data Status = ACTIVE | AWAY | BUSY
-  deriving (Show, Eq, Generic)
 instance FromJSON Status
 
 data Request

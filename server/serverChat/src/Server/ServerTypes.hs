@@ -25,7 +25,6 @@ data Room =
   owner :: Maybe Username
   }
 
--- TODO manage clientStatus with a enum/data
 type Messages = ByteString
 
 data Status = ACTIVE | AWAY | BUSY
