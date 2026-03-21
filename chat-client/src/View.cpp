@@ -18,10 +18,18 @@ void View::printLine(const std::string& prefix, const std::string& colorCode, co
 
 std::string View::statusBadge(UserStatus status) {
     switch (status) {
-        case UserStatus::ACTIVE:  return std::string(Color::BRIGHT_GREEN)  + "●" + Color::RESET;
-        case UserStatus::AWAY:    return std::string(Color::BRIGHT_YELLOW) + "●" + Color::RESET;
-        case UserStatus::BUSY:    return std::string(Color::BRIGHT_RED)    + "●" + Color::RESET;
-        default:                  return std::string(Color::DIM)           + "●" + Color::RESET;
+        case UserStatus::ACTIVE:  
+          return std::string(Color::BRIGHT_GREEN) + 
+            "●" + Color::RESET;
+        case UserStatus::AWAY:    
+          return std::string(Color::BRIGHT_YELLOW) + 
+            "●" + Color::RESET;
+        case UserStatus::BUSY:    
+          return std::string(Color::BRIGHT_RED)    + 
+            "●" + Color::RESET;
+        default:                  
+          return std::string(Color::DIM)           + 
+            "●" + Color::RESET;
     }
 }
 
@@ -177,20 +185,17 @@ void View::showStatusChanged(const std::string& status) {
     showPrompt();
 }
 
+void View::showNotIdentified() {
+    clearCurrentLine();
+    std::cout << Color::BRIGHT_RED << "✖ You must identify yourself first using /identify <username>\n"
+              << Color::RESET;
+    showPrompt();
+}
+
 /* --------------------------------
  * ---- Presenting Users
  * --------------------------------
  */
-
-void View::showUserList(const std::map<std::string, 
-    UserStatus>& users) {
-    clearCurrentLine();
-    std::cout << "\n  " 
-      << Color::BOLD << Color::BRIGHT_WHITE 
-      << "Online users (" << users.size() << ")\n" 
-              << Color::RESET;
-    showPrompt();
-}
 
 void View::showNewUser(const std::string& username) {
     printLine("→", Color::GREEN, Color::BOLD + std::string(username) + Color::RESET + " joined the chat.");
@@ -207,25 +212,24 @@ void View::showUserStatusChanged(const std::string& username, const std::string&
     showPrompt();
 }
 
-void View::showUserList(const std::map<std::string, UserStatus>& users) {
+void View::showUserList(const std::map<std::string, 
+    UserStatus>& users) {
     clearCurrentLine();
-    std::cout << "\n  " << Color::BOLD << Color::BRIGHT_WHITE
-              << "Online users (" << users.size() << ")\n" << Color::RESET;
-    for (auto& [name, status] : users) {
-        std::cout << "    " << statusBadge(status) << "  "
-                  << std::left << std::setw(12) << name
-                  << Color::DIM << Model::statusToString(status) << Color::RESET << "\n";
-    }
-    std::cout << "\n";
+    std::cout << "\n  " 
+      << Color::BOLD << Color::BRIGHT_WHITE 
+      << "Online users (" << users.size() << ")\n" 
+              << Color::RESET;
     showPrompt();
 }
 
 void View::showRoomUserList(const std::string& roomname,
-                             const std::map<std::string, UserStatus>& users) {
+    const std::map<std::string, UserStatus>& users) {
     clearCurrentLine();
-    std::cout << "\n  " << Color::BOLD << Color::BRIGHT_WHITE
-              << "Users in " << Color::BRIGHT_CYAN << "#" << roomname
-              << Color::BRIGHT_WHITE << " (" << users.size() << ")\n" << Color::RESET;
+    std::cout << "\n  " 
+      << Color::BOLD << Color::BRIGHT_WHITE 
+      << "Users in " << Color::BRIGHT_CYAN 
+      << "#" << roomname << Color::BRIGHT_WHITE 
+      << " (" << users.size() << ")\n" << Color::RESET;
     for (auto& [name, status] : users) {
         std::cout << "    " << statusBadge(status) << "  "
                   << std::left << std::setw(12) << name
@@ -240,15 +244,12 @@ void View::showRoomUserList(const std::string& roomname,
  * --------------------------------
  */
 
-void View::showPublicMessage(const std::string& from, 
-    const std::string& text) {
+
+void View::showPrivateMessage(const std::string& from, const std::string& text) {
     clearCurrentLine();
-  std::cout 
-    << Color::BRIGHT_WHITE << Color::BOLD 
-    << from << Color::RESET 
-    << Color::WHITE 
-    << " (public): " << Color::RESET 
-              << text << "\n";
+    std::cout << Color::BRIGHT_MAGENTA << "(private) " 
+              << Color::BOLD << from << Color::RESET 
+              << ": " << text << "\n";
     showPrompt();
 }
 
@@ -259,10 +260,15 @@ void View::showPrivateSentError(const std::string& toUser) {
     showPrompt();
 }
 
-void View::showPublicMessage(const std::string& from, const std::string& text) {
+void View::showPublicMessage(const std::string& from, 
+    const std::string& text) {
     clearCurrentLine();
-    std::cout << Color::BRIGHT_WHITE << Color::BOLD << from << Color::RESET
-              << Color::WHITE << " (public): " << Color::RESET << text << "\n";
+  std::cout 
+    << Color::BRIGHT_WHITE << Color::BOLD 
+    << from << Color::RESET 
+    << Color::WHITE 
+    << " (public): " << Color::RESET 
+              << text << "\n";
     showPrompt();
 }
 
