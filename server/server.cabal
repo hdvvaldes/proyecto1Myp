@@ -48,6 +48,9 @@ executable serverChat
     -- Modules included in this executable, other than Main.
     other-modules:
       Server.ConnectionHandler,
+      Server.Connection.Types,
+      Server.Connection.Actions,
+      Server.Connection.Factory,
       Server.ServerState,
       Server.App,
       Server.ServerTypes,
