@@ -43,26 +43,20 @@ runConn env (s, _) = do
 -- | Manages the handshake and adds the recognized client to the chat room.
 handleConnection :: Handle -> ConnHandler ()
 handleConnection hdl = do
-  client <- handshake hdl
-  addClient client
+  chan <- runSTM newTChan
+  -- Initial temporary client, not yet in ServerState
+  let initialClient = Client
+        { clientName = "pending-handshake"
+        , clientHandle = hdl
+        , clientStatus = ACTIVE
+        , clientChan = chan
+        }
+  -- Start delivery loop early
   _ <- withRunInIO $ \run ->
-    forkIO $ run (deliveryLoop client)
-  -- The client is initially NOT identified (handshake sets a guest name, but mClient is Nothing in env)
-  connLoop client
-
--- | Performs the initial handshake with the client.
-handshake :: Handle -> ConnHandler Client
-handshake hdl = do
-    chan <- runSTM newTChan
-    stateVar <- asks serverState
-    count <- runSTM $ SST.getClientCount stateVar
-    let initialName = "Guest-" ++ show count
-    return $ Client
-      { clientName = initialName
-      , clientHandle = hdl
-      , clientStatus = ACTIVE
-      , clientChan = chan
-      }
+    forkIO $ run (deliveryLoop initialClient)
+  
+  -- Start the loop. Initially handlerClient in env is Nothing.
+  connLoop initialClient
 
 -- | The delivery loop responsible for sending outgoing messages.
 deliveryLoop :: Client -> ConnHandler ()
@@ -74,48 +68,39 @@ deliveryLoop client@Client{clientHandle, clientChan} = do
 -- | The main connection loop for each client.
 connLoop :: Client -> ConnHandler ()
 connLoop client = do
-  -- Use hGetLine but handle EOF/closed handle
   mEntry <- liftIO $ tryRead (clientHandle client)
   case mEntry of
     Nothing -> handleDisconnect -- Closed connection
     Just entry -> do
       case parseRequest (pack entry) of
-        Nothing  -> do
-          liftIO $ BSL.hPut (clientHandle client) (encode $ makeInvalid "INVALID")
+        Nothing -> do
+          liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeInvalid "INVALID") 10)
           handleDisconnect
         Just req -> do
-          -- Protocol Rule: If not identified, only IDENTIFY is allowed.
           mIdentifiedClient <- asks handlerClient
           case mIdentifiedClient of
-            Nothing | Identify uname <- req -> do
-              -- Perform Identification
-              stateVar <- asks serverState
-              let guestName = clientName client
-              res <- runSTM $ SST.findClient stateVar (T.unpack uname)
-              case res of
-                Just _ -> do
-                  liftIO $ BSL.hPut (clientHandle client) (encode $ makeResponse "IDENTIFY" "USER_ALREADY_EXISTS" uname Nothing)
-                  connLoop client
-                Nothing -> do
-                  -- Update state with new name
-                  runSTM $ SST.removeUser stateVar guestName
-                  let identifiedClient = client { clientName = T.unpack uname }
-                  runSTM $ SST.addUser stateVar identifiedClient
-                  liftIO $ BSL.hPut (clientHandle client) (encode $ makeResponse "IDENTIFY" "SUCCESS" uname Nothing)
-                  broadcast $ BSL.toStrict $ encode $ makeNewUser uname
-                  -- Continue loop with identified client in env
-                  local (\env -> env { handlerClient = Just identifiedClient }) (connLoop identifiedClient)
-            
-            Nothing -> do
-              -- Not identified and NOT an IDENTIFY request
-              liftIO $ BSL.hPut (clientHandle client) (encode $ makeInvalid "NOT_IDENTIFIED")
-              handleDisconnect
-              
-            Just identifiedClient -> do
-              -- Already identified, handle normally
+            Nothing -> 
+              case req of
+                Identify uname -> do
+                  stateVar <- asks serverState
+                  res <- runSTM $ SST.findClient stateVar (T.unpack uname)
+                  case res of
+                    Just _ -> do
+                      liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeResponse "IDENTIFY" "USER_ALREADY_EXISTS" uname Nothing) 10)
+                      connLoop client -- Allow retry
+                    Nothing -> do
+                      let identifiedClient = client { clientName = T.unpack uname }
+                      addClient identifiedClient
+                      liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeResponse "IDENTIFY" "SUCCESS" uname Nothing) 10)
+                      broadcast $ BSL.toStrict $ BSL.snoc (encode $ makeNewUser uname) 10
+                      -- Proceed identified
+                      local (\env -> env { handlerClient = Just identifiedClient }) (connLoop identifiedClient)
+                _ -> do
+                  liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeInvalid "NOT_IDENTIFIED") 10)
+                  handleDisconnect
+            Just _ -> do
               handleRequest req
-              -- Continue loop with identified client
-              connLoop identifiedClient
+              connLoop client
 
 tryRead :: Handle -> IO (Maybe String)
 tryRead h = do
