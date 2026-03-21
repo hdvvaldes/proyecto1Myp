@@ -16,9 +16,12 @@ import Network.Socket (Socket, SockAddr)
 import Server.ServerState (ServerState)
 import Server.ServerTypes (Client)
 
+import Data.Text (Text)
+
 data HandlerEnv = HandlerEnv
   { serverState :: TVar ServerState
   , handlerClient :: Maybe Client
+  , logger :: Text -> IO ()
   }
 
 newtype ConnHandler a = ConnHandler
