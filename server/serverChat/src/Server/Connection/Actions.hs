@@ -59,7 +59,13 @@ sendJSON client json = hPutStrLn (clientHandle client) (BSL.toStrict json)
 broadcast :: ByteString -> ConnHandler ()
 broadcast msg = do
   stateVar <- asks serverState
-  runSTM $ SST.broadcast stateVar msg
+  runSTM $ SST.broadcast stateVar (msg <> "\n")
+
+-- | Broadcasts a message to all users in a room.
+broadcastToRoom :: Text -> ByteString -> ConnHandler ()
+broadcastToRoom rname msg = do
+  stateVar <- asks serverState
+  runSTM $ SST.broadcastToRoom stateVar (T.unpack rname) (msg <> "\n")
 
 -- | Adds a client to the server state.
 addClient :: Client -> ConnHandler ()
@@ -190,7 +196,7 @@ handleJoinRoom rname = do
         Left err -> liftIO $ sendJSON client $ encode $ makeResponse "JOIN_ROOM" (T.pack err) rname Nothing
         Right _ -> do
           liftIO $ sendJSON client $ encode $ makeResponse "JOIN_ROOM" "SUCCESS" rname Nothing
-          runSTM $ SST.broadcastToRoom stateVar (T.unpack rname) (BSL.toStrict $ encode $ makeJoinedRoom rname uname)
+          broadcastToRoom rname (BSL.toStrict $ encode $ makeJoinedRoom rname uname)
       logAction uname $ "JOIN_ROOM " <> rname
 
 handleGetRoomUsers :: Text -> ConnHandler ()
@@ -218,7 +224,7 @@ handleSendRoomText rname content = do
       res <- runSTM $ SST.getRoomUsers stateVar (T.unpack rname) (clientName client)
       case res of
         Left err -> liftIO $ sendJSON client $ encode $ makeResponse "ROOM_TEXT" (T.pack err) rname Nothing
-        Right _ -> runSTM $ SST.broadcastToRoom stateVar (T.unpack rname) (BSL.toStrict $ encode $ makeRoomTextFrom rname uname content)
+        Right _ -> broadcastToRoom rname (BSL.toStrict $ encode $ makeRoomTextFrom rname uname content)
       logAction uname $ "SEND_ROOM_TEXT to " <> rname
 
 handleLeaveRoom :: Text -> ConnHandler ()
@@ -232,7 +238,7 @@ handleLeaveRoom rname = do
       res <- runSTM $ SST.leaveRoom stateVar (T.unpack rname) (clientName client)
       case res of
         Left err -> liftIO $ sendJSON client $ encode $ makeResponse "LEAVE_ROOM" (T.pack err) rname Nothing
-        Right _ -> runSTM $ SST.broadcastToRoom stateVar (T.unpack rname) (BSL.toStrict $ encode $ makeLeftRoom rname uname)
+        Right _ -> broadcastToRoom rname (BSL.toStrict $ encode $ makeLeftRoom rname uname)
       logAction uname $ "LEAVE_ROOM " <> rname
 
 handleDisconnect :: ConnHandler ()

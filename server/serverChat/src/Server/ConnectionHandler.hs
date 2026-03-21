@@ -74,7 +74,7 @@ connLoop client = do
     Just entry -> do
       case parseRequest (pack entry) of
         Nothing -> do
-          liftIO $ BSL.hPut (clientHandle client) (encode $ makeInvalid "INVALID")
+          liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeInvalid "INVALID") 10)
           handleDisconnect
         Just req -> do
           mIdentifiedClient <- asks handlerClient
@@ -86,17 +86,17 @@ connLoop client = do
                   res <- runSTM $ SST.findClient stateVar (T.unpack uname)
                   case res of
                     Just _ -> do
-                      liftIO $ BSL.hPut (clientHandle client) (encode $ makeResponse "IDENTIFY" "USER_ALREADY_EXISTS" uname Nothing)
+                      liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeResponse "IDENTIFY" "USER_ALREADY_EXISTS" uname Nothing) 10)
                       connLoop client -- Allow retry
                     Nothing -> do
                       let identifiedClient = client { clientName = T.unpack uname }
                       addClient identifiedClient
-                      liftIO $ BSL.hPut (clientHandle client) (encode $ makeResponse "IDENTIFY" "SUCCESS" uname Nothing)
-                      broadcast $ BSL.toStrict $ encode $ makeNewUser uname
+                      liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeResponse "IDENTIFY" "SUCCESS" uname Nothing) 10)
+                      broadcast $ BSL.toStrict $ BSL.snoc (encode $ makeNewUser uname) 10
                       -- Proceed identified
                       local (\env -> env { handlerClient = Just identifiedClient }) (connLoop identifiedClient)
                 _ -> do
-                  liftIO $ BSL.hPut (clientHandle client) (encode $ makeInvalid "NOT_IDENTIFIED")
+                  liftIO $ BSL.hPut (clientHandle client) (BSL.snoc (encode $ makeInvalid "NOT_IDENTIFIED") 10)
                   handleDisconnect
             Just _ -> do
               handleRequest req
