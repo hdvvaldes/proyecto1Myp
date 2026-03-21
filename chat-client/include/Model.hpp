@@ -1,0 +1,163 @@
+#pragma once
+
+#include <functional>
+#include <string>
+#include <map>
+#include <set>
+
+enum class UserStatus {
+  ACTIVE,
+  AWAY,
+  BUSY,
+  UNKNOWN,
+};
+
+enum class ConnectionState {
+    DISCONNECTED,
+    CONNECTED,       // TCP connected, not yet identified
+    IDENTIFIED       // Identified with a username
+};
+
+struct UserInfo {
+    std::string username;
+    UserStatus  status = UserStatus::ACTIVE;
+};
+
+struct RoomInfo {
+    std::string roomname;
+    // username -> status
+    std::map<std::string, UserStatus> users;  
+};
+
+/*
+ * Model events
+ */
+
+enum class ModelEvent {
+    // Connection
+    CONNECTED,
+    DISCONNECTED,
+    IDENTIFIED,
+
+    // Global user events
+    NEW_USER,
+    USER_DISCONNECTED,
+    STATUS_CHANGED,
+    USER_LIST_UPDATED,
+
+    // Private message
+    TEXT_RECEIVED,
+
+    // Public message
+    PUBLIC_TEXT_RECEIVED,
+
+    // Room events
+    ROOM_CREATED,
+    INVITED_TO_ROOM,
+    JOINED_ROOM,
+    USER_JOINED_ROOM,
+    USER_LEFT_ROOM,
+    ROOM_USER_LIST_UPDATED,
+    ROOM_TEXT_RECEIVED,
+    LEFT_ROOM,
+
+    // Errors / server responses
+    ERROR_RESPONSE,
+    SUCCESS_RESPONSE
+};
+
+struct ModelEventData {
+    ModelEvent  event;
+    std::string username;
+    std::string roomname;
+    std::string text;
+    std::string operation;
+    std::string result;
+    std::string extra;
+    UserStatus  status = UserStatus::ACTIVE;
+    std::map<std::string, UserStatus> users;
+};
+
+class Model {
+public:
+  using EventCallback = 
+      std::function<void(const ModelEventData&)>;
+
+  Model();
+
+  // -- State Modifiers -----
+  void setConnectionState(ConnectionState state);
+  void setUsername(const std::string& username);
+  void setUserStatus(UserStatus status);
+
+  // Users
+  void addUser(const std::string& username, UserStatus status = UserStatus::ACTIVE);
+  void removeUser(const std::string& username);
+  void updateUserStatus(const std::string& username, UserStatus status);
+  void setUserList(const std::map<std::string, UserStatus>& users);
+
+  // Rooms
+  void addRoom(const std::string& roomname);
+  void removeRoom(const std::string& roomname);
+  void addInvitation(const std::string& roomname);
+  void joinRoom(const std::string& roomname);
+  void leaveRoom(const std::string& roomname);
+  void setRoomUserList(const std::string& roomname,
+      const std::map<std::string, UserStatus>& users);
+  void userJoinedRoom(const std::string& roomname, const std::string& username);
+  void userLeftRoom(const std::string& roomname, const std::string& username);
+
+  // -- Getters ---------
+  // Const bc model is not being modified
+  ConnectionState getConnectionState() const 
+    { return connectionState_; }
+
+  const std::string& getUsername() const 
+    { return username_; }
+
+  UserStatus getMyStatus() const 
+    { return myStatus_; }
+
+  const std::map<std::string, UserStatus>& getUsers() const
+    { return users_; }
+
+  const std::map<std::string, RoomInfo>& getRooms() const
+    { return rooms_; }
+
+  bool isIdentified() const 
+    { return connectionState_ == ConnectionState::IDENTIFIED; }
+
+  bool isInRoom(const std::string& roomname) const;
+  bool isInvitedToRoom(const std::string& roomname) const;
+
+  // -------------------------------------
+  // --- Event system -------------------
+  // -------------------------------------
+
+  void setEventCallback(EventCallback cb) { 
+    callback_ = std::move(cb); 
+  }
+
+  // -------------------------------------
+  // -- Utility  -----------------------
+  // -------------------------------------
+
+  static std::string statusToString(UserStatus status);
+
+  static UserStatus statusFromString(const std::string& s);
+
+private:
+  ConnectionState connectionState_ = ConnectionState::DISCONNECTED;
+  std::string username_;
+  UserStatus myStatus_ = UserStatus::ACTIVE;
+   // All online users
+  std::map<std::string, UserStatus> users_;
+  // Rooms we have joined
+  std::map<std::string, RoomInfo> rooms_; 
+  // TODO Overkill set?
+  // Pending invitations
+  std::set<std::string> invitations_; 
+  
+  EventCallback callback_;
+};
+

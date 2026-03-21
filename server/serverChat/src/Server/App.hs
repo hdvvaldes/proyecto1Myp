@@ -11,8 +11,10 @@ where
 
 import Network.Socket
 
-import Server.ConnectionHandler (runConn, HandlerEnv(..))
+import Server.ConnectionHandler (runConn)
+import Server.Connection.Types (HandlerEnv(..))
 import Server.ServerState (newServerState)
+import qualified Data.Text as T
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (atomically)
@@ -52,7 +54,11 @@ runServer config = do
   -- Creating Server State
   stateVar <- atomically newServerState 
   
-  let handleEnv = HandlerEnv { handlerClient = Nothing, serverState = stateVar }
+  let handleEnv = HandlerEnv 
+        { handlerClient = Nothing
+        , serverState = stateVar
+        , logger = \t -> serverLog (T.unpack t)
+        }
 
   --- ACCEPT LOOP ----
   acceptLoop handleEnv sock 
