@@ -4,7 +4,7 @@ module Main where
 
 import qualified Server.Parser.Interface as PI
 import qualified Server.Parser.ParserTypes as PT
-import qualified Server.ProtocolCodec as PC
+import qualified Server.Parser.ProtocolCodec as PC
 import Server.ServerTypes (Status (..))
 
 import qualified Data.ByteString.Char8 as BC

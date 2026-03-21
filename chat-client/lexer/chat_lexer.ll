@@ -69,6 +69,9 @@ void Lexer::setInput(const std::string& line) {
     // switch_streams is provided by the yyFlexLexer base class
     switch_streams(&lineStream_, nullptr);
     
+    // Reset start condition to INITIAL
+    yy_start = 1; 
+    
     token_ = Token::NONE;
     lexeme_.clear();
 }

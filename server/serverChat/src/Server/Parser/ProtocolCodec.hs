@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Server.ProtocolCodec
+module Server.Parser.ProtocolCodec
   ( mkResponse,
     mkNewUser,
     mkNewStatus,
